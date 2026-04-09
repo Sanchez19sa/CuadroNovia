@@ -177,21 +177,52 @@
         <source src="./assets/musica.mp3" type="audio/mpeg">
     </audio>
 
-    <!-- ====== ESTABILIZADOR AR v4 — SIMPLE = MEJOR ====== -->
-    <!-- EMA puro adaptativo por velocidad. Sin dead zones, sin buffers, sin locks. -->
-    <!-- Cero discontinuidades = cero saltos visibles -->
+    <!-- ====== ESTABILIZADOR AR v5 — SENSOR FUSION (Giroscopio + Tracking) ====== -->
+    <!-- Usa el giroscopio del celular para saber si el dispositivo está REALMENTE quieto -->
+    <!-- Si el giroscopio dice "quieto" pero MindAR mueve → es RUIDO, se ignora casi todo -->
     <script>
+        // === SENSOR FUSION: Detectar movimiento REAL con giroscopio ===
+        // El giroscopio del celular es 100x más preciso que el tracking por cámara
+        window._gyroSpeed = 0;
+        window._gyroAvailable = false;
+        let _prevGyroA = null, _prevGyroB = null, _prevGyroG = null;
+        let _gyroSamples = [];
+        const GYRO_SAMPLES = 8;
+
+        function handleOrientation(e) {
+            window._gyroAvailable = true;
+            if (_prevGyroA !== null) {
+                const da = Math.abs(e.alpha - _prevGyroA);
+                const db = Math.abs(e.beta - _prevGyroB);
+                const dg = Math.abs(e.gamma - _prevGyroG);
+                // Compensar wraparound de alpha (0-360)
+                const speed = Math.min(da, 360 - da) + db + dg;
+                _gyroSamples.push(speed);
+                if (_gyroSamples.length > GYRO_SAMPLES) _gyroSamples.shift();
+                window._gyroSpeed = _gyroSamples.reduce((a, b) => a + b, 0) / _gyroSamples.length;
+            }
+            _prevGyroA = e.alpha;
+            _prevGyroB = e.beta;
+            _prevGyroG = e.gamma;
+        }
+        window.addEventListener('deviceorientation', handleOrientation);
+
+        // === COMPONENTE SMOOTH-FOLLOW CON SENSOR FUSION ===
         AFRAME.registerComponent('smooth-follow', {
             schema: {
                 target: { type: 'selector' },
-                // Alpha mínimo cuando quieto (3% = muy suave, noise se cancela)
-                minAlpha: { type: 'number', default: 0.03 },
-                // Alpha máximo cuando en movimiento rápido (70% = responsivo)
+                // Alpha cuando giroscopio confirma quietud (casi congelado)
+                gyroStillAlpha: { type: 'number', default: 0.005 },
+                // Alpha mínimo cuando quieto (sin giroscopio)
+                minAlpha: { type: 'number', default: 0.015 },
+                // Alpha máximo en movimiento rápido (responsivo)
                 maxAlpha: { type: 'number', default: 0.7 },
-                // Factor de sensibilidad a velocidad
+                // Sensibilidad a velocidad
                 speedSensitivity: { type: 'number', default: 40 },
-                // Frames de velocidad a promediar (evita que 1 frame ruidoso suba el alpha)
-                speedFrames: { type: 'number', default: 5 }
+                // Frames de velocidad a promediar
+                speedFrames: { type: 'number', default: 5 },
+                // Umbral giroscopio: por debajo = "dispositivo quieto"
+                gyroStillThreshold: { type: 'number', default: 0.3 }
             },
             init: function() {
                 this._pos = new THREE.Vector3();
@@ -218,7 +249,7 @@
                     return;
                 }
 
-                // Leer posición del tracker (ya pre-filtrada por MindAR OneEuroFilter)
+                // Leer posición del tracker (pre-filtrada por MindAR OneEuroFilter)
                 const p = new THREE.Vector3();
                 const q = new THREE.Quaternion();
                 const s = new THREE.Vector3();
@@ -242,27 +273,33 @@
                     return;
                 }
 
-                // Calcular velocidad instantánea
+                // Velocidad del tracking
                 const speed = p.distanceTo(this._prevPos);
                 this._prevPos.copy(p);
 
-                // Promediar velocidad sobre N frames (evita que ruido suba el alpha)
                 this._speedHistory.push(speed);
                 if (this._speedHistory.length > this.data.speedFrames) {
                     this._speedHistory.shift();
                 }
                 const avgSpeed = this._speedHistory.reduce((a, b) => a + b, 0) / this._speedHistory.length;
 
-                // Alpha adaptativo: quieto=suave, movimiento=responsivo
-                // Sin dead zone = sin saltos. El EMA naturalmente cancela ruido aleatorio.
-                const rawAlpha = this.data.minAlpha + 
-                    Math.min(avgSpeed * this.data.speedSensitivity, this.data.maxAlpha - this.data.minAlpha);
+                // === SENSOR FUSION: Giroscopio decide el alpha mínimo ===
+                // Si el giroscopio dice "quieto" → el tracking noise se aplasta al máximo
+                let effectiveMinAlpha = this.data.minAlpha;
+                if (window._gyroAvailable && window._gyroSpeed < this.data.gyroStillThreshold) {
+                    // El celular está FÍSICAMENTE quieto → cualquier movimiento de MindAR es RUIDO
+                    effectiveMinAlpha = this.data.gyroStillAlpha;
+                }
 
-                // Hacer frame-rate independiente (normalizado a 60fps)
+                // Alpha adaptativo basado en velocidad del tracking
+                const rawAlpha = effectiveMinAlpha + 
+                    Math.min(avgSpeed * this.data.speedSensitivity, this.data.maxAlpha - effectiveMinAlpha);
+
+                // Frame-rate independiente
                 const dt = Math.min(delta || 16.67, 50) / 1000;
                 const alpha = 1 - Math.pow(1 - rawAlpha, dt * 60);
 
-                // Interpolar suavemente — SIN condiciones, SIN dead zones
+                // Interpolar — continuo, sin saltos
                 this._pos.lerp(p, alpha);
                 this._quat.slerp(q, alpha);
                 this._scale.lerp(s, alpha);
@@ -282,7 +319,7 @@
 
     <!-- ====== AR SCENE ====== -->
     <a-scene
-        mindar-image="imageTargetSrc: ./assets/cuadro.mind; autoStart: false; uiLoading: no; uiScanning: no; filterMinCF: 0.05; filterBeta: 50; missTolerance: 10; warmupTolerance: 12;"
+        mindar-image="imageTargetSrc: ./assets/cuadro.mind; autoStart: false; uiLoading: no; uiScanning: no; filterMinCF: 0.1; filterBeta: 50; missTolerance: 10; warmupTolerance: 12;"
         color-space="sRGB"
         renderer="colorManagement: true; physicallyCorrectLights: true;"
         vr-mode-ui="enabled: false"
@@ -305,7 +342,7 @@
 
         <!-- CONTENIDO VISIBLE: sigue al tracker con interpolación suave (SIN jitter) -->
         <a-entity id="ar-content" visible="false"
-            smooth-follow="target: #ar-tracker; minAlpha: 0.03; maxAlpha: 0.7; speedSensitivity: 40; speedFrames: 5;">
+            smooth-follow="target: #ar-tracker; gyroStillAlpha: 0.005; minAlpha: 0.015; maxAlpha: 0.7; speedSensitivity: 40; speedFrames: 5; gyroStillThreshold: 0.3;">
 
             <!-- BASE: Fondo de Flores (z=0) — aparece primero -->
             <a-image src="#layer2" position="0 0 0" width="1.0" height="1.0"
