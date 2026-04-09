@@ -186,9 +186,7 @@
         window._gyroSpeed = 0;
         window._gyroAvailable = false;
         let _prevGyroA = null, _prevGyroB = null, _prevGyroG = null;
-        let _gyroSamples = [];
-        // Restaurado a 8 para una estabilidad ABSOLUTA cuando quieto
-        const GYRO_SAMPLES = 8;
+        
         function handleOrientation(e) {
             window._gyroAvailable = true;
             if (_prevGyroA !== null) {
@@ -196,9 +194,15 @@
                 const db = Math.abs(e.beta - _prevGyroB);
                 const dg = Math.abs(e.gamma - _prevGyroG);
                 const speed = Math.min(da, 360 - da) + db + dg;
-                _gyroSamples.push(speed);
-                if (_gyroSamples.length > GYRO_SAMPLES) _gyroSamples.shift();
-                window._gyroSpeed = _gyroSamples.reduce((a, b) => a + b, 0) / _gyroSamples.length;
+                
+                // FAST ATTACK / SLOW RELEASE
+                // Si haces un movimiento brusco, reacciona en 0 milisegundos (CERO LAG).
+                // Si te quedas quieto, los temblores caen suavemente hasta congelarse.
+                if (speed > window._gyroSpeed) {
+                    window._gyroSpeed = speed;
+                } else {
+                    window._gyroSpeed = window._gyroSpeed * 0.85 + speed * 0.15;
+                }
             }
             _prevGyroA = e.alpha;
             _prevGyroB = e.beta;
@@ -240,11 +244,9 @@
                 maxAlpha: { type: 'number', default: 0.8 },
                 // Sensibilidad a velocidad
                 speedSensitivity: { type: 'number', default: 50 },
-                // Frames de velocidad a promediar (estabilidad)
-                speedFrames: { type: 'number', default: 5 },
-                // Umbral donde se considera TOTALMENTE QUIETO el celular
+                // Umbral donde se considera TOTALMENTE QUIETO el celular (restaurado)
                 gyroStillThreshold: { type: 'number', default: 0.15 },
-                // Umbral donde empieza a moverse intencionalmente
+                // Umbral donde empieza a moverse intencionalmente (restaurado)
                 gyroMoveThreshold: { type: 'number', default: 0.35 },
                 // Factor de amortiguación de rotación (rotación más estable)
                 rotDamping: { type: 'number', default: 0.15 },
@@ -257,11 +259,11 @@
                 this._quat = new THREE.Quaternion();
                 this._scale = new THREE.Vector3(1, 1, 1);
                 this._prevPos = new THREE.Vector3();
-                // Pre-alocar vectores para tick() → CERO garbage collection
+                // Pre-alocar vectores
                 this._tmpP = new THREE.Vector3();
                 this._tmpQ = new THREE.Quaternion();
                 this._tmpS = new THREE.Vector3();
-                this._speedHistory = [];
+                this._fastSpeed = 0;
                 this._ready = false;
                 this._visible = false;
             },
@@ -276,7 +278,7 @@
                         this.el.object3D.visible = false;
                         this._visible = false;
                         this._ready = false;
-                        this._speedHistory = [];
+                        this._fastSpeed = 0;
                     }
                     return;
                 }
@@ -309,35 +311,28 @@
                 const speed = p.distanceTo(this._prevPos);
                 this._prevPos.copy(p);
 
-                this._speedHistory.push(speed);
-                if (this._speedHistory.length > this.data.speedFrames) {
-                    this._speedHistory.shift();
+                // FAST ATTACK / SLOW RELEASE para el tracker
+                if (speed > this._fastSpeed) {
+                    this._fastSpeed = speed; // Cero lag al atrapar el movimiento nuevo
+                } else {
+                    this._fastSpeed = this._fastSpeed * 0.7 + speed * 0.3;
                 }
-                const avgSpeed = this._speedHistory.reduce((a, b) => a + b, 0) / this._speedHistory.length;
+                const avgSpeed = this._fastSpeed;
 
                 // === SENSOR FUSION: Control TOTAL de quietud ===
                 let gyroFactor = 1.0;
                 if (window._gyroAvailable) {
                     if (window._gyroSpeed <= this.data.gyroStillThreshold) {
-                        // CELULAR FÍSICAMENTE QUIETO (sin rotación)
+                        // CELULAR FÍSICAMENTE QUIETO = TODO RUIDO ES FALSO
                         gyroFactor = 0.0;
                     } else if (window._gyroSpeed >= this.data.gyroMoveThreshold) {
                         // CELULAR MOVIÉNDOSE = CONFIAR EN TRACKER
                         gyroFactor = 1.0;
                     } else {
-                        // TRANSICIÓN SUAVE
+                        // TRANSICIÓN SUAVE (evita saltos al empezar a mover)
                         gyroFactor = (window._gyroSpeed - this.data.gyroStillThreshold) / 
                                      (this.data.gyroMoveThreshold - this.data.gyroStillThreshold);
                     }
-                }
-
-                // TRUCO PARA "ACERCARSE" (Traslación pura sin rotación):
-                // El giroscopio no detecta traslación (ej. dar un paso adelante o mover el celular hacia el cuadro sin rotarlo).
-                // Si el tracking nota un movimiento sostenido > 0.004, anulamos el "congelado" del giroscopio.
-                // Esto elimina la sensación de "pegado" al acercarse.
-                if (gyroFactor < 1.0 && avgSpeed > 0.004) {
-                    const translationFactor = Math.min(1.0, (avgSpeed - 0.004) / 0.006);
-                    gyroFactor = Math.max(gyroFactor, translationFactor);
                 }
 
                 // Si gyroFactor === 0, currentMinAlpha = 0.0 (CONGELADO TOTAL)
@@ -403,7 +398,7 @@
 
         <!-- CONTENIDO VISIBLE: sigue al tracker con interpolación suave (SIN jitter) -->
         <a-entity id="ar-content" visible="false"
-            smooth-follow="target: #ar-tracker; gyroStillAlpha: 0.0; minAlpha: 0.01; maxAlpha: 0.8; speedSensitivity: 50; speedFrames: 5; gyroStillThreshold: 0.15; gyroMoveThreshold: 0.35; rotDamping: 0.15; scaleDamping: 0.05;">
+            smooth-follow="target: #ar-tracker; gyroStillAlpha: 0.0; minAlpha: 0.01; maxAlpha: 0.8; speedSensitivity: 50; gyroStillThreshold: 0.15; gyroMoveThreshold: 0.35; rotDamping: 0.15; scaleDamping: 0.05;">
 
             <!-- BASE: Fondo de Flores (z=0) — aparece primero -->
             <a-image src="#layer2" position="0 0 0" width="1.0" height="1.0"
