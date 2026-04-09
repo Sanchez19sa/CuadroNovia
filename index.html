@@ -179,7 +179,7 @@
 
     <!-- ====== AR SCENE (Parallax 3D - Efecto Referencia) ====== -->
     <a-scene
-        mindar-image="imageTargetSrc: ./assets/cuadro.mind; autoStart: false; uiLoading: no; uiScanning: no; filterMinCF: 0.0001; filterBeta: 0.01;"
+        mindar-image="imageTargetSrc: ./assets/cuadro.mind; autoStart: false; uiLoading: no; uiScanning: no; filterMinCF: 0.0001; filterBeta: 10;"
         color-space="sRGB"
         renderer="colorManagement: true; physicallyCorrectLights: true;"
         vr-mode-ui="enabled: false"
@@ -201,57 +201,47 @@
 
         <a-entity mindar-image-target="targetIndex: 0" id="ar-group">
             <!--
-                ESTRUCTURA EXACTA DE LA REFERENCIA:
-                Capa 1: Todas las 9 fotos (base, pegada al cuadro real)
-                Capa 2: Fondo denso de flores 
-                Capa 3: Cruz de fotos (4 fotos centrales)
-                Capa 4: Flores decorando la cruz
-                Capa 5: Fotos de las esquinas
-                Capa 6: Flores decorando las esquinas
-                Capa 7: Foto del centro
-                Capa 8: Flores decorando el centro
-                
-                Z negativo = profundidad hacia la cámara
-                Distancias MUY pequeñas para que no tiemble
+                Z POSITIVO = las capas salen HACIA TI (pop-out)
+                Distancias pequeñas pero visibles para parallax suave
             -->
 
-            <!-- Capa 1: Base del cuadro (pegada, z=0) -->
+            <!-- Capa 1: Base del cuadro (pegada al target, z=0) -->
             <a-image src="#layer1" position="0 0 0" width="1" height="1"
                 material="transparent: true; alphaTest: 0.05;"></a-image>
 
-            <!-- Capa 2: Fondo de flores (z=-0.01) -->
-            <a-image src="#layer2" position="0 0 -0.01" width="1" height="1"
-                animation__pop="property: position; to: 0 0 -0.01; dur: 800; easing: easeOutQuad; startEvents: animate-pop"
+            <!-- Capa 2: Fondo de flores (z=+0.01, sale ligeramente) -->
+            <a-image src="#layer2" position="0 0 0" width="1" height="1"
+                animation__pop="property: position; to: 0 0 0.01; dur: 800; easing: easeOutQuad; startEvents: animate-pop"
                 material="transparent: true; alphaTest: 0.05;"></a-image>
 
-            <!-- Capa 3: Cruz de fotos (z=-0.02) -->
+            <!-- Capa 3: Cruz de fotos (z=+0.025) -->
             <a-image src="#layer3" position="0 0 0" width="1" height="1"
-                animation__pop="property: position; to: 0 0 -0.025; dur: 1000; easing: easeOutQuad; startEvents: animate-pop"
+                animation__pop="property: position; to: 0 0 0.025; dur: 1000; easing: easeOutQuad; startEvents: animate-pop"
                 material="transparent: true; alphaTest: 0.05;"></a-image>
 
-            <!-- Capa 4: Flores de la cruz (z=-0.035) -->
+            <!-- Capa 4: Flores de la cruz (z=+0.04) -->
             <a-image src="#layer4" position="0 0 0" width="1" height="1"
-                animation__pop="property: position; to: 0 0 -0.035; dur: 1200; easing: easeOutQuad; startEvents: animate-pop"
+                animation__pop="property: position; to: 0 0 0.04; dur: 1200; easing: easeOutQuad; startEvents: animate-pop"
                 material="transparent: true; alphaTest: 0.05;"></a-image>
 
-            <!-- Capa 5: Fotos esquinas (z=-0.05) -->
+            <!-- Capa 5: Fotos esquinas (z=+0.055) -->
             <a-image src="#layer5" position="0 0 0" width="1" height="1"
-                animation__pop="property: position; to: 0 0 -0.05; dur: 1400; easing: easeOutQuad; startEvents: animate-pop"
+                animation__pop="property: position; to: 0 0 0.055; dur: 1400; easing: easeOutQuad; startEvents: animate-pop"
                 material="transparent: true; alphaTest: 0.05;"></a-image>
 
-            <!-- Capa 6: Flores esquinas (z=-0.06) -->
+            <!-- Capa 6: Flores esquinas (z=+0.07) -->
             <a-image src="#layer6" position="0 0 0" width="1" height="1"
-                animation__pop="property: position; to: 0 0 -0.065; dur: 1600; easing: easeOutQuad; startEvents: animate-pop"
+                animation__pop="property: position; to: 0 0 0.07; dur: 1600; easing: easeOutQuad; startEvents: animate-pop"
                 material="transparent: true; alphaTest: 0.05;"></a-image>
 
-            <!-- Capa 7: Foto centro (z=-0.08) -->
+            <!-- Capa 7: Foto centro (z=+0.085) -->
             <a-image src="#layer7" position="0 0 0" width="1" height="1"
-                animation__pop="property: position; to: 0 0 -0.08; dur: 1800; easing: easeOutQuad; startEvents: animate-pop"
+                animation__pop="property: position; to: 0 0 0.085; dur: 1800; easing: easeOutQuad; startEvents: animate-pop"
                 material="transparent: true; alphaTest: 0.05;"></a-image>
 
-            <!-- Capa 8: Flores centro (z=-0.095) -->
+            <!-- Capa 8: Flores centro (z=+0.10) -->
             <a-image src="#layer8" position="0 0 0" width="1" height="1"
-                animation__pop="property: position; to: 0 0 -0.095; dur: 2000; easing: easeOutQuad; startEvents: animate-pop"
+                animation__pop="property: position; to: 0 0 0.10; dur: 2000; easing: easeOutQuad; startEvents: animate-pop"
                 material="transparent: true; alphaTest: 0.05;"></a-image>
 
         </a-entity>
