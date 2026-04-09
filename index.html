@@ -177,9 +177,9 @@
         <source src="./assets/musica.mp3" type="audio/mpeg">
     </audio>
 
-    <!-- ====== AR SCENE (Parallax 3D - Efecto Referencia) ====== -->
+    <!-- ====== AR SCENE (Tracking Snappy & Profundidad Cautelosa) ====== -->
     <a-scene
-        mindar-image="imageTargetSrc: ./assets/cuadro.mind; autoStart: false; uiLoading: no; uiScanning: no; filterMinCF: 0.0001; filterBeta: 0.001;"
+        mindar-image="imageTargetSrc: ./assets/cuadro.mind; autoStart: false; uiLoading: no; uiScanning: no;"
         color-space="sRGB"
         renderer="colorManagement: true; physicallyCorrectLights: true;"
         vr-mode-ui="enabled: false"
@@ -201,49 +201,48 @@
 
         <a-entity mindar-image-target="targetIndex: 0" id="ar-group">
             <!--
-                REALIDAD AUMENTADA PRO (Estilo Explosión 3D Controlada):
-                - Eliminada la capa 1 para EVITAR DUPLICADOS.
-                - Fondo floral denso como base.
-                - Z rebajado (máx 0.21) para que el estallido sea sutil y 
-                  las imágenes JAMÁS se vean descentradas del marco original por culpa del parallax.
-                - Eliminadas las animaciones flotantes conflictivas para que las flores 
-                  SIEMPRE estén clavadas perfectamente sobre sus fotos sin atravesarlas.
+                REALIDAD AUMENTADA PRO (Estilo Explosión 3D Controlada Maxima Estabilidad):
+                - Filtros MindAR reseteados a defaults de fábrica para ELIMINAR el lag/temblor.
+                - Z rebajado (máx 0.06) para que el estallido sea mágico pero MILIMÉTRICO, 
+                  garantizando que JAMÁS se salgan del marco sin importar cuánto gires la cámara.
+                - alphaTest a 0.5 (Best practice en Three.js) para evitar que hojas transparentes 
+                  choquen entre sí al rotar.
             -->
 
-            <!-- BASE: Fondo de Flores que cubre la foto real (sin salir del cuadro) z=0 -->
+            <!-- BASE: Fondo de Flores que cubre la foto real z=0 -->
             <a-image src="#layer2" position="0 0 0" width="1.0" height="1.0"
-                material="transparent: true; alphaTest: 0.05;"
+                material="transparent: true; alphaTest: 0.5;"
                 animation__fade="property: material.opacity; from: 0; to: 1; dur: 800; easing: easeOutQuad; startEvents: animate-pop"></a-image>
 
-            <!-- TIER 1: Fotos en Cruz (z=+0.05) -->
+            <!-- TIER 1: Fotos en Cruz (z=+0.01) -->
             <a-image src="#layer3" position="0 0 0" width="1.0" height="1.0"
-                animation__pop="property: position; to: 0 0 0.05; dur: 1200; easing: easeOutElastic; startEvents: animate-pop"
-                material="transparent: true; alphaTest: 0.05;"></a-image>
+                animation__pop="property: position; to: 0 0 0.01; dur: 1200; easing: easeOutElastic; startEvents: animate-pop"
+                material="transparent: true; alphaTest: 0.5;"></a-image>
 
-            <!-- Flores de la cruz (z=+0.07) -->
+            <!-- Flores de la cruz (z=+0.02) -->
             <a-image src="#layer4" position="0 0 0" width="1.0" height="1.0"
-                animation__pop="property: position; to: 0 0 0.07; dur: 1400; easing: easeOutElastic; startEvents: animate-pop"
-                material="transparent: true; alphaTest: 0.05;"></a-image>
+                animation__pop="property: position; to: 0 0 0.02; dur: 1400; easing: easeOutElastic; startEvents: animate-pop"
+                material="transparent: true; alphaTest: 0.5;"></a-image>
 
-            <!-- TIER 2: Fotos Esquinas (z=+0.12) -->
+            <!-- TIER 2: Fotos Esquinas (z=+0.03) -->
             <a-image src="#layer5" position="0 0 0" width="1.0" height="1.0"
-                animation__pop="property: position; to: 0 0 0.12; dur: 1600; easing: easeOutElastic; startEvents: animate-pop"
-                material="transparent: true; alphaTest: 0.05;"></a-image>
+                animation__pop="property: position; to: 0 0 0.03; dur: 1600; easing: easeOutElastic; startEvents: animate-pop"
+                material="transparent: true; alphaTest: 0.5;"></a-image>
 
-            <!-- Flores esquinas (z=+0.14) -->
+            <!-- Flores esquinas (z=+0.04) -->
             <a-image src="#layer6" position="0 0 0" width="1.0" height="1.0"
-                animation__pop="property: position; to: 0 0 0.14; dur: 1800; easing: easeOutElastic; startEvents: animate-pop"
-                material="transparent: true; alphaTest: 0.05;"></a-image>
+                animation__pop="property: position; to: 0 0 0.04; dur: 1800; easing: easeOutElastic; startEvents: animate-pop"
+                material="transparent: true; alphaTest: 0.5;"></a-image>
 
-            <!-- TIER 3: Foto Central (z=+0.19) -->
+            <!-- TIER 3: Foto Central (z=+0.05) -->
             <a-image src="#layer7" position="0 0 0" width="1.0" height="1.0"
-                animation__pop="property: position; to: 0 0 0.19; dur: 2000; easing: easeOutElastic; startEvents: animate-pop"
-                material="transparent: true; alphaTest: 0.05;"></a-image>
+                animation__pop="property: position; to: 0 0 0.05; dur: 2000; easing: easeOutElastic; startEvents: animate-pop"
+                material="transparent: true; alphaTest: 0.5;"></a-image>
 
-            <!-- Flores centro (z=+0.21) -->
+            <!-- Flores centro (z=+0.06) -->
             <a-image src="#layer8" position="0 0 0" width="1.0" height="1.0"
-                animation__pop="property: position; to: 0 0 0.21; dur: 2300; easing: easeOutElastic; startEvents: animate-pop"
-                material="transparent: true; alphaTest: 0.05;"></a-image>
+                animation__pop="property: position; to: 0 0 0.06; dur: 2300; easing: easeOutElastic; startEvents: animate-pop"
+                material="transparent: true; alphaTest: 0.5;"></a-image>
 
         </a-entity>
     </a-scene>
