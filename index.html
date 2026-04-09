@@ -261,6 +261,12 @@
                 this._tmpP = new THREE.Vector3();
                 this._tmpQ = new THREE.Quaternion();
                 this._tmpS = new THREE.Vector3();
+                // Variables para la Micro-Deadzone (cortafuegos de temblor base)
+                this._lockedP = new THREE.Vector3();
+                this._lockedQ = new THREE.Quaternion();
+                this._lockedS = new THREE.Vector3();
+                this._hasLock = false;
+                
                 this._speedHistory = [];
                 this._ready = false;
                 this._visible = false;
@@ -287,6 +293,20 @@
                 const s = this._tmpS;
                 obj3d.updateWorldMatrix(true, false);
                 obj3d.matrixWorld.decompose(p, q, s);
+
+                // === ELIMINAR MICRO-AJUSTES AL MARCO (MICRO-DEADZONE) ===
+                // Si el tracking de cámara devuelve una rectificación de menos de 0.5 milímetros,
+                // la ignoramos por completo. Esto elimina la sensación de "estar ajustándose siempre" al borde.
+                if (this._hasLock && p.distanceTo(this._lockedP) < 0.0005) {
+                    p.copy(this._lockedP);
+                    q.copy(this._lockedQ);
+                    s.copy(this._lockedS);
+                } else {
+                    this._lockedP.copy(p);
+                    this._lockedQ.copy(q);
+                    this._lockedS.copy(s);
+                    this._hasLock = true;
+                }
 
                 const self = this.el.object3D;
 
@@ -380,7 +400,7 @@
 
     <!-- ====== AR SCENE ====== -->
     <a-scene
-        mindar-image="imageTargetSrc: ./assets/cuadro.mind; autoStart: false; uiLoading: no; uiScanning: no; filterMinCF: 0.1; filterBeta: 50; missTolerance: 10; warmupTolerance: 12;"
+        mindar-image="imageTargetSrc: ./assets/cuadro.mind; autoStart: false; uiLoading: no; uiScanning: no; filterMinCF: 0.005; filterBeta: 1000; missTolerance: 10; warmupTolerance: 12;"
         color-space="sRGB"
         renderer="colorManagement: true; physicallyCorrectLights: true;"
         vr-mode-ui="enabled: false"
