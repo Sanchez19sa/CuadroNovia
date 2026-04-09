@@ -14,26 +14,44 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: 100vh;
+            height: 100vh; /* Altura estricta para evitar scroll */
+            overflow: hidden; 
             font-family: 'Inter', sans-serif;
         }
 
         .container {
-            padding: 20px;
-            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            padding: 20px 20px 30px;
+            box-sizing: border-box;
+        }
+
+        .img-wrapper {
+            flex: 1; /* Toma todo el espacio disponible */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            min-height: 0; /* Crucial para que flexbox permita a la imagen encogerse */
+            margin-bottom: 20px;
         }
 
         img {
             max-width: 100%;
-            height: auto;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.15); /* Sombra elegante */
-            border-radius: 8px;
-            margin-bottom: 30px;
+            max-height: 100%;
+            object-fit: contain; /* Encaja en pantalla sin perder proporciones */
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15); 
+            border-radius: 4px;
         }
 
         .btn-back {
+            flex-shrink: 0;
             display: inline-block;
-            padding: 12px 28px;
+            padding: 14px 32px;
             background: #f1f1f1;
             color: #333;
             text-decoration: none;
@@ -50,9 +68,10 @@
 </head>
 <body>
     <div class="container">
-        <!-- Mostramos la imagen con fondo blanco controlado por nosotros, no por el navegador -->
-        <img src="./assets/collage-cuadro.png" alt="Tu cuadro digital">
-        <br>
+        <!-- Contenedor flexible que exprime la imagen a la altura de tu pantalla -->
+        <div class="img-wrapper">
+            <img src="./assets/collage-cuadro.png" alt="Tu cuadro digital">
+        </div>
         <a href="index.html" class="btn-back">⬅ Volver a la App AR</a>
     </div>
 </body>
