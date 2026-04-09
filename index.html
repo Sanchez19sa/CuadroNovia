@@ -180,87 +180,44 @@
     <!-- ====== ESTABILIZADOR AR v5 — SENSOR FUSION (Giroscopio + Tracking) ====== -->
     <!-- Usa el giroscopio del celular para saber si el dispositivo está REALMENTE quieto -->
     <!-- Si el giroscopio dice "quieto" pero MindAR mueve → es RUIDO, se ignora casi todo -->
+    <!-- ====== ESTABILIZADOR AR v6 — ABSOLUTE FREEZE Y LERP ====== -->
+    <!-- Logra el 100% de inmovilidad física de las capas cuando el usuario no se mueve -->
     <script>
-        // === SENSOR FUSION: Detectar movimiento REAL con giroscopio ===
-        // Funciona en: Samsung S21 FE (Android), iPhone 12 Pro Max (iOS), cualquier smartphone
-        window._gyroSpeed = 0;
-        window._gyroAvailable = false;
-        let _prevGyroA = null, _prevGyroB = null, _prevGyroG = null;
-        let _gyroSamples = [];
-        const GYRO_SAMPLES = 8;
-
-        function handleOrientation(e) {
-            window._gyroAvailable = true;
-            if (_prevGyroA !== null) {
-                const da = Math.abs(e.alpha - _prevGyroA);
-                const db = Math.abs(e.beta - _prevGyroB);
-                const dg = Math.abs(e.gamma - _prevGyroG);
-                const speed = Math.min(da, 360 - da) + db + dg;
-                _gyroSamples.push(speed);
-                if (_gyroSamples.length > GYRO_SAMPLES) _gyroSamples.shift();
-                window._gyroSpeed = _gyroSamples.reduce((a, b) => a + b, 0) / _gyroSamples.length;
-            }
-            _prevGyroA = e.alpha;
-            _prevGyroB = e.beta;
-            _prevGyroG = e.gamma;
-        }
-
-        // Inicializar giroscopio (con permiso de iOS si es necesario)
-        async function initGyroscope() {
-            try {
-                // iOS 13+ requiere permiso explícito para DeviceOrientation
-                if (typeof DeviceOrientationEvent !== 'undefined' &&
-                    typeof DeviceOrientationEvent.requestPermission === 'function') {
-                    const permission = await DeviceOrientationEvent.requestPermission();
-                    if (permission === 'granted') {
-                        window.addEventListener('deviceorientation', handleOrientation);
-                        console.log('Giroscopio iOS activado ✅');
-                    } else {
-                        console.warn('Permiso de giroscopio denegado en iOS');
-                    }
-                } else {
-                    // Android y otros: no necesita permiso
-                    window.addEventListener('deviceorientation', handleOrientation);
-                    console.log('Giroscopio activado ✅');
-                }
-            } catch(e) {
-                console.warn('Giroscopio no disponible:', e);
-            }
-        }
-
-        // === COMPONENTE SMOOTH-FOLLOW CON SENSOR FUSION + ROTATION DAMPING ===
-        AFRAME.registerComponent('smooth-follow', {
+        AFRAME.registerComponent('absolute-ar-lock', {
             schema: {
                 target: { type: 'selector' },
-                // Alpha cuando giroscopio confirma quietud (0.01% = CONGELADO)
-                gyroStillAlpha: { type: 'number', default: 0.0001 },
-                // Alpha mínimo sin giroscopio
-                minAlpha: { type: 'number', default: 0.003 },
-                // Alpha máximo en movimiento rápido
-                maxAlpha: { type: 'number', default: 0.7 },
-                // Sensibilidad a velocidad
-                speedSensitivity: { type: 'number', default: 35 },
-                // Frames de velocidad a promediar
-                speedFrames: { type: 'number', default: 8 },
-                // Umbral giroscopio
-                gyroStillThreshold: { type: 'number', default: 0.4 },
-                // Factor de amortiguación de rotación (0.1 = rotación se suaviza 10x más)
-                // CLAVE: las capas en Z amplifican rotación → necesita más smoothing
-                rotDamping: { type: 'number', default: 0.1 }
+                // Distancia a partir de la cual consideramos que es "movimiento intencional"
+                moveThreshold: { type: 'number', default: 0.006 },
+                // Rotación (radianes) para "movimiento intencional"
+                rotThreshold: { type: 'number', default: 0.01 },
+                // Cantidad de frames por debajo del umbral para congelar totalmente
+                freezeFrames: { type: 'number', default: 5 },
+                // Velocidad de interpolación visual (suaviza cualquier desbloqueo o movimiento)
+                lerpSpeed: { type: 'number', default: 0.12 }
             },
             init: function() {
-                // Estado suavizado
-                this._pos = new THREE.Vector3();
-                this._quat = new THREE.Quaternion();
-                this._scale = new THREE.Vector3(1, 1, 1);
-                this._prevPos = new THREE.Vector3();
-                // Pre-alocar vectores para tick() → CERO garbage collection
+                // Posición matemática (la que dicta la lógica, con o sin freeze)
+                this._targetPos = new THREE.Vector3();
+                this._targetQuat = new THREE.Quaternion();
+                this._targetScale = new THREE.Vector3(1, 1, 1);
+
+                // Posición visual (la que ve el usuario, siempre persigue a la matemática con Lerp)
+                this._visualPos = new THREE.Vector3();
+                this._visualQuat = new THREE.Quaternion();
+                this._visualScale = new THREE.Vector3(1, 1, 1);
+
+                // Variables de estado
+                this._prevRawPos = new THREE.Vector3();
+                this._prevRawQuat = new THREE.Quaternion();
+                this._stillFrames = 0;
+                this._isFrozen = false;
+                
+                this._ready = false;
+                this._visible = false;
+                
                 this._tmpP = new THREE.Vector3();
                 this._tmpQ = new THREE.Quaternion();
                 this._tmpS = new THREE.Vector3();
-                this._speedHistory = [];
-                this._ready = false;
-                this._visible = false;
             },
             tick: function(time, delta) {
                 const tracker = this.data.target;
@@ -273,13 +230,11 @@
                         this.el.object3D.visible = false;
                         this._visible = false;
                         this._ready = false;
-                        this._speedHistory = [];
+                        this._isFrozen = false;
                     }
                     return;
                 }
 
-                // Leer posición del tracker (pre-filtrada por MindAR)
-                // REUSAR vectores pre-alocados = cero garbage collection = cero micro-stutters
                 const p = this._tmpP;
                 const q = this._tmpQ;
                 const s = this._tmpS;
@@ -288,60 +243,71 @@
 
                 const self = this.el.object3D;
 
-                // Primera detección: snap directo
+                // Primera Detección: Todo salta directamente a la posición real
                 if (!this._ready) {
-                    this._pos.copy(p);
-                    this._quat.copy(q);
-                    this._scale.copy(s);
-                    this._prevPos.copy(p);
-                    self.position.copy(this._pos);
-                    self.quaternion.copy(this._quat);
-                    self.scale.copy(this._scale);
+                    this._targetPos.copy(p);
+                    this._targetQuat.copy(q);
+                    this._targetScale.copy(s);
+                    
+                    this._visualPos.copy(p);
+                    this._visualQuat.copy(q);
+                    this._visualScale.copy(s);
+                    
+                    this._prevRawPos.copy(p);
+                    this._prevRawQuat.copy(q);
+                    
+                    self.position.copy(this._visualPos);
+                    self.quaternion.copy(this._visualQuat);
+                    self.scale.copy(this._visualScale);
+                    
                     self.visible = true;
                     this._visible = true;
                     this._ready = true;
                     return;
                 }
 
-                // Velocidad del tracking
-                const speed = p.distanceTo(this._prevPos);
-                this._prevPos.copy(p);
+                // Calcular cuánto se ha movido el *tracker en crudo* desde el último frame
+                const posSpeed = p.distanceTo(this._prevRawPos);
+                const rotSpeed = q.angleTo(this._prevRawQuat);
 
-                this._speedHistory.push(speed);
-                if (this._speedHistory.length > this.data.speedFrames) {
-                    this._speedHistory.shift();
+                this._prevRawPos.copy(p);
+                this._prevRawQuat.copy(q);
+
+                // LÓGICA DE ABSOLUTE FREEZE
+                // Si el movimiento es muy pequeño (ruido o temblor natural de la mano), sumamos frames quietos
+                if (posSpeed < this.data.moveThreshold && rotSpeed < this.data.rotThreshold) {
+                    this._stillFrames++;
+                    if (this._stillFrames >= this.data.freezeFrames) {
+                        this._isFrozen = true; // ACTIVAMOS EL CONGELAMIENTO MATEMÁTICO
+                    }
+                } else {
+                    // Si hubo un movimiento grande / intencional de la cámara, rompemos el congelamiento
+                    this._stillFrames = 0;
+                    this._isFrozen = false;
                 }
-                const avgSpeed = this._speedHistory.reduce((a, b) => a + b, 0) / this._speedHistory.length;
 
-                // SENSOR FUSION: Giroscopio decide el alpha mínimo
-                let effectiveMinAlpha = this.data.minAlpha;
-                if (window._gyroAvailable && window._gyroSpeed < this.data.gyroStillThreshold) {
-                    effectiveMinAlpha = this.data.gyroStillAlpha;
+                // ACTUALIZAR POSICIÓN MATEMÁTICA
+                // Si NO estamos congelados, la posición matemática persigue la posición cruda del tracker
+                if (!this._isFrozen) {
+                    this._targetPos.copy(p);
+                    this._targetQuat.copy(q);
+                    this._targetScale.copy(s);
                 }
+                // Si ESTAMOS congelados, NO HACEMOS NADA con `_targetPos`. Se queda idéntico al frame anterior.
 
-                // Alpha adaptativo
-                const rawAlpha = effectiveMinAlpha + 
-                    Math.min(avgSpeed * this.data.speedSensitivity, this.data.maxAlpha - effectiveMinAlpha);
+                // ACTUALIZAR POSICIÓN VISUAL (Lo que ves en pantalla)
+                // Usamos un LERP constante. Esto asegura que si se "descongela", no hay un SALTO (jump cut),
+                // sino que el elemento simplemente "resbala" rápidamente a la nueva posición.
+                const alpha = Math.min(this.data.lerpSpeed * (delta / 16.67 || 1), 1);
+                
+                this._visualPos.lerp(this._targetPos, alpha);
+                this._visualQuat.slerp(this._targetQuat, alpha);
+                this._visualScale.lerp(this._targetScale, alpha);
 
-                // Frame-rate independiente
-                const dt = Math.min(delta || 16.67, 50) / 1000;
-                const alpha = 1 - Math.pow(1 - rawAlpha, dt * 60);
-
-                // === ROTATION DAMPING ===
-                // Las capas están offset en Z (0 a 0.60). Cualquier rotación se AMPLIFICA
-                // por la distancia Z: una micro-rotación mueve la capa frontal mucho más.
-                // Solución: la rotación se suaviza 4x más que la posición.
-                const rotAlpha = alpha * this.data.rotDamping;
-
-                // Interpolar — posición normal, ROTACIÓN extra-suave
-                this._pos.lerp(p, alpha);
-                this._quat.slerp(q, rotAlpha);  // ← 4x más suave que posición
-                this._scale.lerp(s, alpha);
-
-                // Aplicar
-                self.position.copy(this._pos);
-                self.quaternion.copy(this._quat);
-                self.scale.copy(this._scale);
+                // Aplicar a pantalla
+                self.position.copy(this._visualPos);
+                self.quaternion.copy(this._visualQuat);
+                self.scale.copy(this._visualScale);
 
                 if (!this._visible) {
                     self.visible = true;
@@ -353,7 +319,7 @@
 
     <!-- ====== AR SCENE ====== -->
     <a-scene
-        mindar-image="imageTargetSrc: ./assets/cuadro.mind; autoStart: false; uiLoading: no; uiScanning: no; filterMinCF: 0.2; filterBeta: 30; missTolerance: 10; warmupTolerance: 12;"
+        mindar-image="imageTargetSrc: ./assets/cuadro.mind; autoStart: false; uiLoading: no; uiScanning: no; filterMinCF: 0.0001; filterBeta: 1000; missTolerance: 10; warmupTolerance: 12;"
         color-space="sRGB"
         renderer="colorManagement: true; physicallyCorrectLights: true;"
         vr-mode-ui="enabled: false"
@@ -374,56 +340,56 @@
         <!-- TRACKER INVISIBLE: recibe los datos crudos de MindAR (con su jitter natural) -->
         <a-entity mindar-image-target="targetIndex: 0" id="ar-tracker"></a-entity>
 
-        <!-- CONTENIDO VISIBLE: sigue al tracker con interpolación suave (SIN jitter) -->
+        <!-- CONTENIDO VISIBLE: sigue al tracker con bloqueo absoluto matemático -->
         <a-entity id="ar-content" visible="false"
-            smooth-follow="target: #ar-tracker; gyroStillAlpha: 0.0001; minAlpha: 0.003; maxAlpha: 0.7; speedSensitivity: 35; speedFrames: 8; gyroStillThreshold: 0.4; rotDamping: 0.1;">
+            absolute-ar-lock="target: #ar-tracker; moveThreshold: 0.005; rotThreshold: 0.005; freezeFrames: 5; lerpSpeed: 0.15;">
 
-            <!-- BASE: Fondo de Flores (z=-0.005) — escalado a 1.05 para cubrir el marco físico y esconder temblor de bordes -->
-            <a-image src="#layer2" position="0 0 -0.005" width="1.05" height="1.05"
+            <!-- BASE: Fondo de Flores (z=0) — aparece primero -->
+            <a-image src="#layer2" position="0 0 0" width="1.0" height="1.0"
                 material="transparent: true; alphaTest: 0.05; opacity: 0;"
                 animation__fadein="property: material.opacity; from: 0; to: 1; dur: 600; easing: easeOutQuad; startEvents: ar-pop;"
                 class="ar-layer"></a-image>
 
-            <!-- TIER 1: Fotos en Cruz — sale a z=0.015 -->
+            <!-- TIER 1: Fotos en Cruz — sale de z=0 a z=0.15 -->
             <a-image src="#layer3" position="0 0 0" width="1.0" height="1.0"
                 material="transparent: true; alphaTest: 0.05; opacity: 0;"
                 animation__fadein="property: material.opacity; from: 0; to: 1; dur: 500; delay: 200; easing: easeOutQuad; startEvents: ar-pop;"
-                animation__zout="property: position; from: 0 0 0; to: 0 0 0.015; dur: 800; delay: 200; easing: easeOutBack; startEvents: ar-pop;"
+                animation__zout="property: position; from: 0 0 0; to: 0 0 0.15; dur: 800; delay: 200; easing: easeOutBack; startEvents: ar-pop;"
                 class="ar-layer"></a-image>
 
-            <!-- Flores de la cruz — sale a z=0.02 -->
+            <!-- Flores de la cruz — sale a z=0.20 -->
             <a-image src="#layer4" position="0 0 0" width="1.0" height="1.0"
                 material="transparent: true; alphaTest: 0.05; opacity: 0;"
                 animation__fadein="property: material.opacity; from: 0; to: 1; dur: 500; delay: 350; easing: easeOutQuad; startEvents: ar-pop;"
-                animation__zout="property: position; from: 0 0 0; to: 0 0 0.02; dur: 800; delay: 350; easing: easeOutBack; startEvents: ar-pop;"
+                animation__zout="property: position; from: 0 0 0; to: 0 0 0.20; dur: 800; delay: 350; easing: easeOutBack; startEvents: ar-pop;"
                 class="ar-layer"></a-image>
 
-            <!-- TIER 2: Fotos Esquinas — sale a z=0.035 -->
+            <!-- TIER 2: Fotos Esquinas — sale a z=0.35 -->
             <a-image src="#layer5" position="0 0 0" width="1.0" height="1.0"
                 material="transparent: true; alphaTest: 0.05; opacity: 0;"
                 animation__fadein="property: material.opacity; from: 0; to: 1; dur: 500; delay: 500; easing: easeOutQuad; startEvents: ar-pop;"
-                animation__zout="property: position; from: 0 0 0; to: 0 0 0.035; dur: 900; delay: 500; easing: easeOutBack; startEvents: ar-pop;"
+                animation__zout="property: position; from: 0 0 0; to: 0 0 0.35; dur: 900; delay: 500; easing: easeOutBack; startEvents: ar-pop;"
                 class="ar-layer"></a-image>
 
-            <!-- Flores esquinas — sale a z=0.04 -->
+            <!-- Flores esquinas — sale a z=0.40 -->
             <a-image src="#layer6" position="0 0 0" width="1.0" height="1.0"
                 material="transparent: true; alphaTest: 0.05; opacity: 0;"
                 animation__fadein="property: material.opacity; from: 0; to: 1; dur: 500; delay: 650; easing: easeOutQuad; startEvents: ar-pop;"
-                animation__zout="property: position; from: 0 0 0; to: 0 0 0.04; dur: 900; delay: 650; easing: easeOutBack; startEvents: ar-pop;"
+                animation__zout="property: position; from: 0 0 0; to: 0 0 0.40; dur: 900; delay: 650; easing: easeOutBack; startEvents: ar-pop;"
                 class="ar-layer"></a-image>
 
-            <!-- TIER 3: Foto Central — sale a z=0.055 -->
+            <!-- TIER 3: Foto Central — sale a z=0.55 (la que más flota) -->
             <a-image src="#layer7" position="0 0 0" width="1.0" height="1.0"
                 material="transparent: true; alphaTest: 0.05; opacity: 0;"
                 animation__fadein="property: material.opacity; from: 0; to: 1; dur: 500; delay: 800; easing: easeOutQuad; startEvents: ar-pop;"
-                animation__zout="property: position; from: 0 0 0; to: 0 0 0.055; dur: 1000; delay: 800; easing: easeOutBack; startEvents: ar-pop;"
+                animation__zout="property: position; from: 0 0 0; to: 0 0 0.55; dur: 1000; delay: 800; easing: easeOutBack; startEvents: ar-pop;"
                 class="ar-layer"></a-image>
 
-            <!-- Flores centro — sale a z=0.06 -->
+            <!-- Flores centro — sale a z=0.60 (la más cercana a ti) -->
             <a-image src="#layer8" position="0 0 0" width="1.0" height="1.0"
                 material="transparent: true; alphaTest: 0.05; opacity: 0;"
                 animation__fadein="property: material.opacity; from: 0; to: 1; dur: 500; delay: 950; easing: easeOutQuad; startEvents: ar-pop;"
-                animation__zout="property: position; from: 0 0 0; to: 0 0 0.06; dur: 1000; delay: 950; easing: easeOutBack; startEvents: ar-pop;"
+                animation__zout="property: position; from: 0 0 0; to: 0 0 0.60; dur: 1000; delay: 950; easing: easeOutBack; startEvents: ar-pop;"
                 class="ar-layer"></a-image>
 
         </a-entity>
