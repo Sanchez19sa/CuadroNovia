@@ -180,44 +180,90 @@
     <!-- ====== ESTABILIZADOR AR v5 — SENSOR FUSION (Giroscopio + Tracking) ====== -->
     <!-- Usa el giroscopio del celular para saber si el dispositivo está REALMENTE quieto -->
     <!-- Si el giroscopio dice "quieto" pero MindAR mueve → es RUIDO, se ignora casi todo -->
-    <!-- ====== ESTABILIZADOR AR v6 — ABSOLUTE FREEZE Y LERP ====== -->
-    <!-- Logra el 100% de inmovilidad física de las capas cuando el usuario no se mueve -->
     <script>
-        AFRAME.registerComponent('absolute-ar-lock', {
+        // === SENSOR FUSION: Detectar movimiento REAL con giroscopio ===
+        // Funciona en: Samsung S21 FE (Android), iPhone 12 Pro Max (iOS), cualquier smartphone
+        window._gyroSpeed = 0;
+        window._gyroAvailable = false;
+        let _prevGyroA = null, _prevGyroB = null, _prevGyroG = null;
+        let _gyroSamples = [];
+        const GYRO_SAMPLES = 8;
+
+        function handleOrientation(e) {
+            window._gyroAvailable = true;
+            if (_prevGyroA !== null) {
+                const da = Math.abs(e.alpha - _prevGyroA);
+                const db = Math.abs(e.beta - _prevGyroB);
+                const dg = Math.abs(e.gamma - _prevGyroG);
+                const speed = Math.min(da, 360 - da) + db + dg;
+                _gyroSamples.push(speed);
+                if (_gyroSamples.length > GYRO_SAMPLES) _gyroSamples.shift();
+                window._gyroSpeed = _gyroSamples.reduce((a, b) => a + b, 0) / _gyroSamples.length;
+            }
+            _prevGyroA = e.alpha;
+            _prevGyroB = e.beta;
+            _prevGyroG = e.gamma;
+        }
+
+        // Inicializar giroscopio (con permiso de iOS si es necesario)
+        async function initGyroscope() {
+            try {
+                // iOS 13+ requiere permiso explícito para DeviceOrientation
+                if (typeof DeviceOrientationEvent !== 'undefined' &&
+                    typeof DeviceOrientationEvent.requestPermission === 'function') {
+                    const permission = await DeviceOrientationEvent.requestPermission();
+                    if (permission === 'granted') {
+                        window.addEventListener('deviceorientation', handleOrientation);
+                        console.log('Giroscopio iOS activado ✅');
+                    } else {
+                        console.warn('Permiso de giroscopio denegado en iOS');
+                    }
+                } else {
+                    // Android y otros: no necesita permiso
+                    window.addEventListener('deviceorientation', handleOrientation);
+                    console.log('Giroscopio activado ✅');
+                }
+            } catch(e) {
+                console.warn('Giroscopio no disponible:', e);
+            }
+        }
+
+        // === COMPONENTE SMOOTH-FOLLOW CON SENSOR FUSION (TOTAL FREEZE) ===
+        AFRAME.registerComponent('smooth-follow', {
             schema: {
                 target: { type: 'selector' },
-                // Distancia a partir de la cual consideramos que es "movimiento intencional"
-                moveThreshold: { type: 'number', default: 0.006 },
-                // Rotación (radianes) para "movimiento intencional"
-                rotThreshold: { type: 'number', default: 0.01 },
-                // Cantidad de frames por debajo del umbral para congelar totalmente
-                freezeFrames: { type: 'number', default: 5 },
-                // Velocidad de interpolación visual (suaviza cualquier desbloqueo o movimiento)
-                lerpSpeed: { type: 'number', default: 0.12 }
+                // Alpha cuando giroscopio confirma quietud: 0.0 significa CONGELADO TOTAL
+                gyroStillAlpha: { type: 'number', default: 0.0 },
+                // Alpha mínimo sin giroscopio
+                minAlpha: { type: 'number', default: 0.01 },
+                // Alpha máximo en movimiento rápido
+                maxAlpha: { type: 'number', default: 0.6 },
+                // Sensibilidad a velocidad
+                speedSensitivity: { type: 'number', default: 50 },
+                // Frames de velocidad a promediar
+                speedFrames: { type: 'number', default: 5 },
+                // Umbral donde se considera TOTALMENTE QUIETO el celular
+                gyroStillThreshold: { type: 'number', default: 0.15 },
+                // Umbral donde empieza a moverse intencionalmente
+                gyroMoveThreshold: { type: 'number', default: 0.35 },
+                // Factor de amortiguación de rotación (rotación más estable)
+                rotDamping: { type: 'number', default: 0.15 },
+                // Factor de amortiguación de escala (ELIMINA efecto de "respiración")
+                scaleDamping: { type: 'number', default: 0.05 }
             },
             init: function() {
-                // Posición matemática (la que dicta la lógica, con o sin freeze)
-                this._targetPos = new THREE.Vector3();
-                this._targetQuat = new THREE.Quaternion();
-                this._targetScale = new THREE.Vector3(1, 1, 1);
-
-                // Posición visual (la que ve el usuario, siempre persigue a la matemática con Lerp)
-                this._visualPos = new THREE.Vector3();
-                this._visualQuat = new THREE.Quaternion();
-                this._visualScale = new THREE.Vector3(1, 1, 1);
-
-                // Variables de estado
-                this._prevRawPos = new THREE.Vector3();
-                this._prevRawQuat = new THREE.Quaternion();
-                this._stillFrames = 0;
-                this._isFrozen = false;
-                
-                this._ready = false;
-                this._visible = false;
-                
+                // Estado suavizado
+                this._pos = new THREE.Vector3();
+                this._quat = new THREE.Quaternion();
+                this._scale = new THREE.Vector3(1, 1, 1);
+                this._prevPos = new THREE.Vector3();
+                // Pre-alocar vectores para tick() → CERO garbage collection
                 this._tmpP = new THREE.Vector3();
                 this._tmpQ = new THREE.Quaternion();
                 this._tmpS = new THREE.Vector3();
+                this._speedHistory = [];
+                this._ready = false;
+                this._visible = false;
             },
             tick: function(time, delta) {
                 const tracker = this.data.target;
@@ -230,11 +276,12 @@
                         this.el.object3D.visible = false;
                         this._visible = false;
                         this._ready = false;
-                        this._isFrozen = false;
+                        this._speedHistory = [];
                     }
                     return;
                 }
 
+                // Leer posición del tracker
                 const p = this._tmpP;
                 const q = this._tmpQ;
                 const s = this._tmpS;
@@ -243,71 +290,76 @@
 
                 const self = this.el.object3D;
 
-                // Primera Detección: Todo salta directamente a la posición real
+                // Primera detección: snap directo
                 if (!this._ready) {
-                    this._targetPos.copy(p);
-                    this._targetQuat.copy(q);
-                    this._targetScale.copy(s);
-                    
-                    this._visualPos.copy(p);
-                    this._visualQuat.copy(q);
-                    this._visualScale.copy(s);
-                    
-                    this._prevRawPos.copy(p);
-                    this._prevRawQuat.copy(q);
-                    
-                    self.position.copy(this._visualPos);
-                    self.quaternion.copy(this._visualQuat);
-                    self.scale.copy(this._visualScale);
-                    
+                    this._pos.copy(p);
+                    this._quat.copy(q);
+                    this._scale.copy(s);
+                    this._prevPos.copy(p);
+                    self.position.copy(this._pos);
+                    self.quaternion.copy(this._quat);
+                    self.scale.copy(this._scale);
                     self.visible = true;
                     this._visible = true;
                     this._ready = true;
                     return;
                 }
 
-                // Calcular cuánto se ha movido el *tracker en crudo* desde el último frame
-                const posSpeed = p.distanceTo(this._prevRawPos);
-                const rotSpeed = q.angleTo(this._prevRawQuat);
+                // Velocidad del tracking
+                const speed = p.distanceTo(this._prevPos);
+                this._prevPos.copy(p);
 
-                this._prevRawPos.copy(p);
-                this._prevRawQuat.copy(q);
+                this._speedHistory.push(speed);
+                if (this._speedHistory.length > this.data.speedFrames) {
+                    this._speedHistory.shift();
+                }
+                const avgSpeed = this._speedHistory.reduce((a, b) => a + b, 0) / this._speedHistory.length;
 
-                // LÓGICA DE ABSOLUTE FREEZE
-                // Si el movimiento es muy pequeño (ruido o temblor natural de la mano), sumamos frames quietos
-                if (posSpeed < this.data.moveThreshold && rotSpeed < this.data.rotThreshold) {
-                    this._stillFrames++;
-                    if (this._stillFrames >= this.data.freezeFrames) {
-                        this._isFrozen = true; // ACTIVAMOS EL CONGELAMIENTO MATEMÁTICO
+                // === SENSOR FUSION: Control TOTAL de quietud ===
+                let gyroFactor = 1.0;
+                if (window._gyroAvailable) {
+                    if (window._gyroSpeed <= this.data.gyroStillThreshold) {
+                        // CELULAR FÍSICAMENTE QUIETO = TODO RUIDO ES FALSO
+                        gyroFactor = 0.0;
+                    } else if (window._gyroSpeed >= this.data.gyroMoveThreshold) {
+                        // CELULAR MOVIÉNDOSE = CONFIAR EN TRACKER
+                        gyroFactor = 1.0;
+                    } else {
+                        // TRANSICIÓN SUAVE (evita saltos al empezar a mover)
+                        gyroFactor = (window._gyroSpeed - this.data.gyroStillThreshold) / 
+                                     (this.data.gyroMoveThreshold - this.data.gyroStillThreshold);
                     }
-                } else {
-                    // Si hubo un movimiento grande / intencional de la cámara, rompemos el congelamiento
-                    this._stillFrames = 0;
-                    this._isFrozen = false;
                 }
 
-                // ACTUALIZAR POSICIÓN MATEMÁTICA
-                // Si NO estamos congelados, la posición matemática persigue la posición cruda del tracker
-                if (!this._isFrozen) {
-                    this._targetPos.copy(p);
-                    this._targetQuat.copy(q);
-                    this._targetScale.copy(s);
-                }
-                // Si ESTAMOS congelados, NO HACEMOS NADA con `_targetPos`. Se queda idéntico al frame anterior.
-
-                // ACTUALIZAR POSICIÓN VISUAL (Lo que ves en pantalla)
-                // Usamos un LERP constante. Esto asegura que si se "descongela", no hay un SALTO (jump cut),
-                // sino que el elemento simplemente "resbala" rápidamente a la nueva posición.
-                const alpha = Math.min(this.data.lerpSpeed * (delta / 16.67 || 1), 1);
+                // Si gyroFactor === 0, currentMinAlpha = 0.0 (CONGELADO TOTAL)
+                const currentMinAlpha = gyroFactor === 0.0 ? this.data.gyroStillAlpha : this.data.minAlpha;
                 
-                this._visualPos.lerp(this._targetPos, alpha);
-                this._visualQuat.slerp(this._targetQuat, alpha);
-                this._visualScale.lerp(this._targetScale, alpha);
+                // El ruido del tracker se ignora si gyroFactor es bajo
+                const dynamicSpeed = avgSpeed * gyroFactor;
 
-                // Aplicar a pantalla
-                self.position.copy(this._visualPos);
-                self.quaternion.copy(this._visualQuat);
-                self.scale.copy(this._visualScale);
+                // Alpha adaptativo
+                const rawAlpha = currentMinAlpha + 
+                    Math.min(dynamicSpeed * this.data.speedSensitivity, this.data.maxAlpha - currentMinAlpha);
+
+                // Frame-rate independiente
+                const dt = Math.min(delta || 16.67, 50) / 1000;
+                const alpha = 1 - Math.pow(1 - rawAlpha, dt * 60);
+
+                // === ELIMINACIÓN DE TEMBLOR EN CAPAS Z ===
+                // La escala controla el tamaño = distancia percibida (la super suavizamos)
+                const scaleAlpha = alpha * this.data.scaleDamping;
+                // La rotación amplifica las capas en Z como un péndulo (la suavizamos x6)
+                const rotAlpha = alpha * this.data.rotDamping;
+
+                // Interpolar (si alpha=0, NO HACE NADA, queda ESTATICO MATEMATICAMENTE)
+                this._pos.lerp(p, alpha);
+                this._quat.slerp(q, rotAlpha);
+                this._scale.lerp(s, scaleAlpha);
+
+                // Aplicar
+                self.position.copy(this._pos);
+                self.quaternion.copy(this._quat);
+                self.scale.copy(this._scale);
 
                 if (!this._visible) {
                     self.visible = true;
@@ -319,7 +371,7 @@
 
     <!-- ====== AR SCENE ====== -->
     <a-scene
-        mindar-image="imageTargetSrc: ./assets/cuadro.mind; autoStart: false; uiLoading: no; uiScanning: no; filterMinCF: 0.0001; filterBeta: 1000; missTolerance: 10; warmupTolerance: 12;"
+        mindar-image="imageTargetSrc: ./assets/cuadro.mind; autoStart: false; uiLoading: no; uiScanning: no; filterMinCF: 0.1; filterBeta: 50; missTolerance: 10; warmupTolerance: 12;"
         color-space="sRGB"
         renderer="colorManagement: true; physicallyCorrectLights: true;"
         vr-mode-ui="enabled: false"
@@ -340,9 +392,9 @@
         <!-- TRACKER INVISIBLE: recibe los datos crudos de MindAR (con su jitter natural) -->
         <a-entity mindar-image-target="targetIndex: 0" id="ar-tracker"></a-entity>
 
-        <!-- CONTENIDO VISIBLE: sigue al tracker con bloqueo absoluto matemático -->
+        <!-- CONTENIDO VISIBLE: sigue al tracker con interpolación suave (SIN jitter) -->
         <a-entity id="ar-content" visible="false"
-            absolute-ar-lock="target: #ar-tracker; moveThreshold: 0.005; rotThreshold: 0.005; freezeFrames: 5; lerpSpeed: 0.15;">
+            smooth-follow="target: #ar-tracker; gyroStillAlpha: 0.001; minAlpha: 0.008; maxAlpha: 0.7; speedSensitivity: 40; speedFrames: 5; gyroStillThreshold: 0.3; rotDamping: 0.25;">
 
             <!-- BASE: Fondo de Flores (z=0) — aparece primero -->
             <a-image src="#layer2" position="0 0 0" width="1.0" height="1.0"
