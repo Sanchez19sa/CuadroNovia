@@ -228,28 +228,36 @@
             }
         }
 
-        // === COMPONENTE SMOOTH-FOLLOW CON SENSOR FUSION ===
+        // === COMPONENTE SMOOTH-FOLLOW CON SENSOR FUSION + ROTATION DAMPING ===
         AFRAME.registerComponent('smooth-follow', {
             schema: {
                 target: { type: 'selector' },
-                // Alpha cuando giroscopio confirma quietud (casi congelado)
-                gyroStillAlpha: { type: 'number', default: 0.005 },
-                // Alpha mínimo cuando quieto (sin giroscopio)
-                minAlpha: { type: 'number', default: 0.015 },
-                // Alpha máximo en movimiento rápido (responsivo)
+                // Alpha cuando giroscopio confirma quietud
+                gyroStillAlpha: { type: 'number', default: 0.001 },
+                // Alpha mínimo sin giroscopio
+                minAlpha: { type: 'number', default: 0.008 },
+                // Alpha máximo en movimiento rápido
                 maxAlpha: { type: 'number', default: 0.7 },
                 // Sensibilidad a velocidad
                 speedSensitivity: { type: 'number', default: 40 },
                 // Frames de velocidad a promediar
                 speedFrames: { type: 'number', default: 5 },
-                // Umbral giroscopio: por debajo = "dispositivo quieto"
-                gyroStillThreshold: { type: 'number', default: 0.3 }
+                // Umbral giroscopio
+                gyroStillThreshold: { type: 'number', default: 0.3 },
+                // Factor de amortiguación de rotación (0.25 = rotación se suaviza 4x más)
+                // CLAVE: las capas en Z amplifican rotación → necesita más smoothing
+                rotDamping: { type: 'number', default: 0.25 }
             },
             init: function() {
+                // Estado suavizado
                 this._pos = new THREE.Vector3();
                 this._quat = new THREE.Quaternion();
                 this._scale = new THREE.Vector3(1, 1, 1);
                 this._prevPos = new THREE.Vector3();
+                // Pre-alocar vectores para tick() → CERO garbage collection
+                this._tmpP = new THREE.Vector3();
+                this._tmpQ = new THREE.Quaternion();
+                this._tmpS = new THREE.Vector3();
                 this._speedHistory = [];
                 this._ready = false;
                 this._visible = false;
@@ -270,10 +278,11 @@
                     return;
                 }
 
-                // Leer posición del tracker (pre-filtrada por MindAR OneEuroFilter)
-                const p = new THREE.Vector3();
-                const q = new THREE.Quaternion();
-                const s = new THREE.Vector3();
+                // Leer posición del tracker (pre-filtrada por MindAR)
+                // REUSAR vectores pre-alocados = cero garbage collection = cero micro-stutters
+                const p = this._tmpP;
+                const q = this._tmpQ;
+                const s = this._tmpS;
                 obj3d.updateWorldMatrix(true, false);
                 obj3d.matrixWorld.decompose(p, q, s);
 
@@ -304,15 +313,13 @@
                 }
                 const avgSpeed = this._speedHistory.reduce((a, b) => a + b, 0) / this._speedHistory.length;
 
-                // === SENSOR FUSION: Giroscopio decide el alpha mínimo ===
-                // Si el giroscopio dice "quieto" → el tracking noise se aplasta al máximo
+                // SENSOR FUSION: Giroscopio decide el alpha mínimo
                 let effectiveMinAlpha = this.data.minAlpha;
                 if (window._gyroAvailable && window._gyroSpeed < this.data.gyroStillThreshold) {
-                    // El celular está FÍSICAMENTE quieto → cualquier movimiento de MindAR es RUIDO
                     effectiveMinAlpha = this.data.gyroStillAlpha;
                 }
 
-                // Alpha adaptativo basado en velocidad del tracking
+                // Alpha adaptativo
                 const rawAlpha = effectiveMinAlpha + 
                     Math.min(avgSpeed * this.data.speedSensitivity, this.data.maxAlpha - effectiveMinAlpha);
 
@@ -320,9 +327,15 @@
                 const dt = Math.min(delta || 16.67, 50) / 1000;
                 const alpha = 1 - Math.pow(1 - rawAlpha, dt * 60);
 
-                // Interpolar — continuo, sin saltos
+                // === ROTATION DAMPING ===
+                // Las capas están offset en Z (0 a 0.60). Cualquier rotación se AMPLIFICA
+                // por la distancia Z: una micro-rotación mueve la capa frontal mucho más.
+                // Solución: la rotación se suaviza 4x más que la posición.
+                const rotAlpha = alpha * this.data.rotDamping;
+
+                // Interpolar — posición normal, ROTACIÓN extra-suave
                 this._pos.lerp(p, alpha);
-                this._quat.slerp(q, alpha);
+                this._quat.slerp(q, rotAlpha);  // ← 4x más suave que posición
                 this._scale.lerp(s, alpha);
 
                 // Aplicar
@@ -363,7 +376,7 @@
 
         <!-- CONTENIDO VISIBLE: sigue al tracker con interpolación suave (SIN jitter) -->
         <a-entity id="ar-content" visible="false"
-            smooth-follow="target: #ar-tracker; gyroStillAlpha: 0.005; minAlpha: 0.015; maxAlpha: 0.7; speedSensitivity: 40; speedFrames: 5; gyroStillThreshold: 0.3;">
+            smooth-follow="target: #ar-tracker; gyroStillAlpha: 0.001; minAlpha: 0.008; maxAlpha: 0.7; speedSensitivity: 40; speedFrames: 5; gyroStillThreshold: 0.3; rotDamping: 0.25;">
 
             <!-- BASE: Fondo de Flores (z=0) — aparece primero -->
             <a-image src="#layer2" position="0 0 0" width="1.0" height="1.0"
