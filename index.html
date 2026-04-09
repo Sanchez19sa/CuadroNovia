@@ -177,33 +177,31 @@
         <source src="./assets/musica.mp3" type="audio/mpeg">
     </audio>
 
-    <!-- ====== ESTABILIZADOR AR PROFESIONAL (Dead Zone + Adaptive Smoothing + Frame Buffer) ====== -->
+    <!-- ====== ESTABILIZADOR AR PROFESIONAL v2 ====== -->
+    <!-- Dead Zone + Adaptive Smoothing + Buffer Adaptativo por Velocidad -->
     <script>
         AFRAME.registerComponent('smooth-follow', {
             schema: {
                 target: { type: 'selector' },
-                // Suavizado mínimo cuando la cámara está quieta (más bajo = más estable)
-                minSmoothing: { type: 'number', default: 0.025 },
-                // Suavizado máximo cuando la cámara se mueve rápido (más alto = más responsivo)
-                maxSmoothing: { type: 'number', default: 0.2 },
-                // Velocidad de movimiento que activa el suavizado máximo
-                speedThreshold: { type: 'number', default: 0.04 },
-                // Zona muerta: ignora micro-movimientos menores a este umbral
-                deadZone: { type: 'number', default: 0.0008 },
-                // Cuántos frames promediar para reducir ruido
-                bufferSize: { type: 'number', default: 10 }
+                // Suavizado cuando la cámara está quieta (2% = roca sólida)
+                minSmoothing: { type: 'number', default: 0.02 },
+                // Suavizado cuando la cámara se mueve rápido (90% = casi instantáneo)
+                maxSmoothing: { type: 'number', default: 0.9 },
+                // Velocidad que activa el modo responsivo 
+                speedThreshold: { type: 'number', default: 0.012 },
+                // Zona muerta: ignora micro-movimientos por ruido
+                deadZone: { type: 'number', default: 0.0006 },
+                // Buffer máximo de frames (se achica automáticamente en movimiento)
+                bufferSize: { type: 'number', default: 8 }
             },
             init: function() {
-                // Estado suavizado final
                 this._smoothedPos = new THREE.Vector3();
                 this._smoothedQuat = new THREE.Quaternion();
                 this._smoothedScale = new THREE.Vector3(1, 1, 1);
-                // Buffers para promediar frames (reduce ruido aleatorio)
                 this._posBuffer = [];
                 this._quatBuffer = [];
                 this._scaleBuffer = [];
-                // Posición anterior del tracker para calcular velocidad
-                this._prevAvgPos = new THREE.Vector3();
+                this._prevRawPos = new THREE.Vector3();
                 this._ready = false;
                 this._visible = false;
             },
@@ -212,7 +210,7 @@
                 if (!tracker) return;
                 const trackerObj = tracker.object3D;
 
-                // TARGET LOST: ocultar y resetear
+                // TARGET LOST
                 if (!trackerObj.visible) {
                     if (this._visible) {
                         this.el.object3D.visible = false;
@@ -225,30 +223,44 @@
                     return;
                 }
 
-                // Leer posición cruda del tracker
+                // Leer posición cruda
                 const rawPos = new THREE.Vector3();
                 const rawQuat = new THREE.Quaternion();
                 const rawScale = new THREE.Vector3();
                 trackerObj.updateWorldMatrix(true, false);
                 trackerObj.matrixWorld.decompose(rawPos, rawQuat, rawScale);
 
-                // === PASO 1: Acumular en buffer circular ===
+                // === PASO 1: Calcular velocidad CRUDA (antes de buffer) ===
+                const rawSpeed = this._ready ? rawPos.distanceTo(this._prevRawPos) : 0;
+                this._prevRawPos.copy(rawPos);
+
+                // === PASO 2: Calcular ratio de velocidad con curva sqrt ===
+                // sqrt hace que la transición quiet→rápido ocurra ANTES
+                const speedRatio = Math.min(rawSpeed / this.data.speedThreshold, 1.0);
+                const curvedRatio = Math.sqrt(speedRatio);
+
+                // === PASO 3: Buffer ADAPTATIVO — se achica en movimiento rápido ===
+                // Quieto: buffer completo (8 frames de promediado = ultra estable)
+                // Moviendo: buffer de 2 (casi sin promediado = sin latencia)
+                const adaptiveBufSize = Math.max(2, Math.round(
+                    this.data.bufferSize * (1 - curvedRatio * 0.75)
+                ));
+
                 this._posBuffer.push(rawPos);
                 this._quatBuffer.push(rawQuat);
                 this._scaleBuffer.push(rawScale);
-                const maxBuf = this.data.bufferSize;
-                if (this._posBuffer.length > maxBuf) {
+                // Recortar al tamaño adaptativo
+                while (this._posBuffer.length > adaptiveBufSize) {
                     this._posBuffer.shift();
                     this._quatBuffer.shift();
                     this._scaleBuffer.shift();
                 }
 
-                // === PASO 2: Calcular promedio del buffer (elimina ruido aleatorio) ===
+                // === PASO 4: Promedio del buffer ===
                 const avgPos = new THREE.Vector3();
                 for (const p of this._posBuffer) avgPos.add(p);
                 avgPos.divideScalar(this._posBuffer.length);
 
-                // Promedio de quaterniones: slerp incremental
                 let avgQuat = this._quatBuffer[0].clone();
                 for (let i = 1; i < this._quatBuffer.length; i++) {
                     avgQuat.slerp(this._quatBuffer[i], 1 / (i + 1));
@@ -260,12 +272,11 @@
 
                 const selfObj = this.el.object3D;
 
-                // === PRIMERA DETECCIÓN: snap directo sin interpolar ===
+                // === PRIMERA DETECCIÓN: snap directo ===
                 if (!this._ready) {
                     this._smoothedPos.copy(avgPos);
                     this._smoothedQuat.copy(avgQuat);
                     this._smoothedScale.copy(avgScale);
-                    this._prevAvgPos.copy(avgPos);
                     selfObj.position.copy(this._smoothedPos);
                     selfObj.quaternion.copy(this._smoothedQuat);
                     selfObj.scale.copy(this._smoothedScale);
@@ -275,18 +286,12 @@
                     return;
                 }
 
-                // === PASO 3: Calcular velocidad del promedio ===
-                const speed = avgPos.distanceTo(this._prevAvgPos);
-                this._prevAvgPos.copy(avgPos);
-
-                // === PASO 4: Smoothing adaptativo por velocidad ===
-                // Lento (ruido) → minSmoothing (0.025 = casi estático)
-                // Rápido (movimiento real) → maxSmoothing (0.2 = sigue bien)
-                const ratio = Math.min(speed / this.data.speedThreshold, 1.0);
+                // === PASO 5: Smoothing adaptativo ===
+                // Quieto → 0.02 (roca)  |  Moviendo → 0.9 (instantáneo)
                 const f = this.data.minSmoothing + 
-                          (this.data.maxSmoothing - this.data.minSmoothing) * ratio;
+                          (this.data.maxSmoothing - this.data.minSmoothing) * curvedRatio;
 
-                // === PASO 5: Dead Zone — ignorar micro-movimientos ===
+                // === PASO 6: Dead Zone — ignorar micro-movimientos ===
                 const posDelta = avgPos.distanceTo(this._smoothedPos);
                 if (posDelta > this.data.deadZone) {
                     this._smoothedPos.lerp(avgPos, f);
@@ -299,7 +304,7 @@
 
                 this._smoothedScale.lerp(avgScale, f);
 
-                // === PASO 6: Aplicar resultado final al objeto visible ===
+                // === PASO 7: Aplicar al objeto visible ===
                 selfObj.position.copy(this._smoothedPos);
                 selfObj.quaternion.copy(this._smoothedQuat);
                 selfObj.scale.copy(this._smoothedScale);
@@ -337,7 +342,7 @@
 
         <!-- CONTENIDO VISIBLE: sigue al tracker con interpolación suave (SIN jitter) -->
         <a-entity id="ar-content" visible="false"
-            smooth-follow="target: #ar-tracker; minSmoothing: 0.025; maxSmoothing: 0.2; speedThreshold: 0.04; deadZone: 0.0008; bufferSize: 10;">
+            smooth-follow="target: #ar-tracker; minSmoothing: 0.02; maxSmoothing: 0.9; speedThreshold: 0.012; deadZone: 0.0006; bufferSize: 8;">
 
             <!-- BASE: Fondo de Flores denso (z=0) -->
             <a-image src="#layer2" position="0 0 0" width="1.0" height="1.0"
