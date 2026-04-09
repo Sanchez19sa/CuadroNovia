@@ -55,13 +55,19 @@
         }
 
         /* Collage preview on landing */
-        .collage-link { display: block; text-decoration: none; margin: 0 auto 8px; width: 260px; cursor: pointer; }
+        .collage-link { 
+            display: inline-block; 
+            text-decoration: none; 
+            margin-bottom: 12px; 
+            cursor: pointer; 
+            -webkit-tap-highlight-color: transparent;
+        }
         .collage-preview {
             width: 260px; height: 260px; border-radius: 12px; overflow: hidden;
             border: 3px solid rgba(192,132,252,0.3);
             box-shadow: 0 0 40px rgba(192,132,252,0.15); transition: transform 0.3s, box-shadow 0.3s;
         }
-        .collage-preview img { width: 100%; height: 100%; object-fit: cover; }
+        .collage-preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
         .collage-link:hover .collage-preview { transform: scale(1.03); box-shadow: 0 0 50px rgba(192,132,252,0.3); }
         .collage-hint { color: rgba(255,255,255,0.35); font-size: 0.72rem; margin-bottom: 32px; }
 
