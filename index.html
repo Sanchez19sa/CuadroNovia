@@ -177,172 +177,103 @@
         <source src="./assets/musica.mp3" type="audio/mpeg">
     </audio>
 
-    <!-- ====== ESTABILIZADOR AR PROFESIONAL v3 — GOD MODE ====== -->
-    <!-- Doble filtrado (MindAR + nuestro) + Stillness Lock + Dead Zone + Buffer Adaptativo -->
+    <!-- ====== ESTABILIZADOR AR v4 — SIMPLE = MEJOR ====== -->
+    <!-- EMA puro adaptativo por velocidad. Sin dead zones, sin buffers, sin locks. -->
+    <!-- Cero discontinuidades = cero saltos visibles -->
     <script>
         AFRAME.registerComponent('smooth-follow', {
             schema: {
                 target: { type: 'selector' },
-                // 0.8% por frame cuando quieto — prácticamente inmóvil
-                minSmoothing: { type: 'number', default: 0.008 },
-                // 90% por frame en movimiento — sigue instantáneamente
-                maxSmoothing: { type: 'number', default: 0.9 },
-                // Umbral de velocidad para activar modo responsivo
-                speedThreshold: { type: 'number', default: 0.012 },
-                // Zona muerta amplia: ignora TODO micro-movimiento
-                deadZone: { type: 'number', default: 0.002 },
-                // Zona muerta para rotación (en radianes)
-                rotDeadZone: { type: 'number', default: 0.003 },
-                // Buffer máximo (se achica en movimiento)
-                bufferSize: { type: 'number', default: 12 },
-                // Frames quietos para activar FREEZE total
-                lockAfterFrames: { type: 'number', default: 8 }
+                // Alpha mínimo cuando quieto (3% = muy suave, noise se cancela)
+                minAlpha: { type: 'number', default: 0.03 },
+                // Alpha máximo cuando en movimiento rápido (70% = responsivo)
+                maxAlpha: { type: 'number', default: 0.7 },
+                // Factor de sensibilidad a velocidad
+                speedSensitivity: { type: 'number', default: 40 },
+                // Frames de velocidad a promediar (evita que 1 frame ruidoso suba el alpha)
+                speedFrames: { type: 'number', default: 5 }
             },
             init: function() {
-                this._smoothedPos = new THREE.Vector3();
-                this._smoothedQuat = new THREE.Quaternion();
-                this._smoothedScale = new THREE.Vector3(1, 1, 1);
-                this._posBuffer = [];
-                this._quatBuffer = [];
-                this._scaleBuffer = [];
-                this._prevRawPos = new THREE.Vector3();
-                this._stillFrames = 0; // Contador de frames quietos para LOCK
+                this._pos = new THREE.Vector3();
+                this._quat = new THREE.Quaternion();
+                this._scale = new THREE.Vector3(1, 1, 1);
+                this._prevPos = new THREE.Vector3();
+                this._speedHistory = [];
                 this._ready = false;
                 this._visible = false;
             },
-            tick: function() {
+            tick: function(time, delta) {
                 const tracker = this.data.target;
                 if (!tracker) return;
-                const trackerObj = tracker.object3D;
+                const obj3d = tracker.object3D;
 
                 // TARGET LOST
-                if (!trackerObj.visible) {
+                if (!obj3d.visible) {
                     if (this._visible) {
                         this.el.object3D.visible = false;
                         this._visible = false;
                         this._ready = false;
-                        this._stillFrames = 0;
-                        this._posBuffer = [];
-                        this._quatBuffer = [];
-                        this._scaleBuffer = [];
+                        this._speedHistory = [];
                     }
                     return;
                 }
 
-                // Leer posición cruda del tracker
-                const rawPos = new THREE.Vector3();
-                const rawQuat = new THREE.Quaternion();
-                const rawScale = new THREE.Vector3();
-                trackerObj.updateWorldMatrix(true, false);
-                trackerObj.matrixWorld.decompose(rawPos, rawQuat, rawScale);
+                // Leer posición del tracker (ya pre-filtrada por MindAR OneEuroFilter)
+                const p = new THREE.Vector3();
+                const q = new THREE.Quaternion();
+                const s = new THREE.Vector3();
+                obj3d.updateWorldMatrix(true, false);
+                obj3d.matrixWorld.decompose(p, q, s);
 
-                // === PASO 1: Velocidad cruda ===
-                const rawSpeed = this._ready ? rawPos.distanceTo(this._prevRawPos) : 0;
-                this._prevRawPos.copy(rawPos);
+                const self = this.el.object3D;
 
-                // === PASO 2: Ratio de velocidad con curva sqrt ===
-                const speedRatio = Math.min(rawSpeed / this.data.speedThreshold, 1.0);
-                const curvedRatio = Math.sqrt(speedRatio);
-
-                // === PASO 3: STILLNESS LOCK ===
-                // Si la velocidad está dentro de la dead zone por N frames consecutivos,
-                // CONGELAR completamente — cero actualizaciones, cero micro-movimiento
-                if (rawSpeed < this.data.deadZone * 0.5) {
-                    this._stillFrames++;
-                } else {
-                    this._stillFrames = 0;
-                }
-
-                const isLocked = this._stillFrames > this.data.lockAfterFrames;
-
-                // Si está congelado Y ya listo, no actualizar NADA — absolute freeze
-                if (isLocked && this._ready) {
-                    // Solo mantener visible, no tocar posición/rotación
-                    if (!this._visible) {
-                        this.el.object3D.visible = true;
-                        this._visible = true;
-                    }
-                    // Seguir llenando buffer para cuando se desbloquee
-                    this._posBuffer.push(rawPos);
-                    this._quatBuffer.push(rawQuat);
-                    this._scaleBuffer.push(rawScale);
-                    while (this._posBuffer.length > this.data.bufferSize) {
-                        this._posBuffer.shift();
-                        this._quatBuffer.shift();
-                        this._scaleBuffer.shift();
-                    }
-                    return; // ← FREEZE: no toca absolutamente nada
-                }
-
-                // === PASO 4: Buffer ADAPTATIVO ===
-                // Quieto: 12 frames promediados | Moviendo rápido: 2 frames
-                const adaptiveBufSize = Math.max(2, Math.round(
-                    this.data.bufferSize * (1 - curvedRatio * 0.8)
-                ));
-
-                this._posBuffer.push(rawPos);
-                this._quatBuffer.push(rawQuat);
-                this._scaleBuffer.push(rawScale);
-                while (this._posBuffer.length > adaptiveBufSize) {
-                    this._posBuffer.shift();
-                    this._quatBuffer.shift();
-                    this._scaleBuffer.shift();
-                }
-
-                // === PASO 5: Promedio del buffer ===
-                const avgPos = new THREE.Vector3();
-                for (const p of this._posBuffer) avgPos.add(p);
-                avgPos.divideScalar(this._posBuffer.length);
-
-                let avgQuat = this._quatBuffer[0].clone();
-                for (let i = 1; i < this._quatBuffer.length; i++) {
-                    avgQuat.slerp(this._quatBuffer[i], 1 / (i + 1));
-                }
-
-                const avgScale = new THREE.Vector3();
-                for (const s of this._scaleBuffer) avgScale.add(s);
-                avgScale.divideScalar(this._scaleBuffer.length);
-
-                const selfObj = this.el.object3D;
-
-                // === PRIMERA DETECCIÓN: snap directo ===
+                // Primera detección: snap directo
                 if (!this._ready) {
-                    this._smoothedPos.copy(avgPos);
-                    this._smoothedQuat.copy(avgQuat);
-                    this._smoothedScale.copy(avgScale);
-                    selfObj.position.copy(this._smoothedPos);
-                    selfObj.quaternion.copy(this._smoothedQuat);
-                    selfObj.scale.copy(this._smoothedScale);
-                    selfObj.visible = true;
+                    this._pos.copy(p);
+                    this._quat.copy(q);
+                    this._scale.copy(s);
+                    this._prevPos.copy(p);
+                    self.position.copy(this._pos);
+                    self.quaternion.copy(this._quat);
+                    self.scale.copy(this._scale);
+                    self.visible = true;
                     this._visible = true;
                     this._ready = true;
                     return;
                 }
 
-                // === PASO 6: Smoothing adaptativo ===
-                const f = this.data.minSmoothing +
-                          (this.data.maxSmoothing - this.data.minSmoothing) * curvedRatio;
+                // Calcular velocidad instantánea
+                const speed = p.distanceTo(this._prevPos);
+                this._prevPos.copy(p);
 
-                // === PASO 7: Dead Zone — rechazar micro-movimientos ===
-                const posDelta = avgPos.distanceTo(this._smoothedPos);
-                if (posDelta > this.data.deadZone) {
-                    this._smoothedPos.lerp(avgPos, f);
+                // Promediar velocidad sobre N frames (evita que ruido suba el alpha)
+                this._speedHistory.push(speed);
+                if (this._speedHistory.length > this.data.speedFrames) {
+                    this._speedHistory.shift();
                 }
+                const avgSpeed = this._speedHistory.reduce((a, b) => a + b, 0) / this._speedHistory.length;
 
-                const quatDelta = this._smoothedQuat.angleTo(avgQuat);
-                if (quatDelta > this.data.rotDeadZone) {
-                    this._smoothedQuat.slerp(avgQuat, f);
-                }
+                // Alpha adaptativo: quieto=suave, movimiento=responsivo
+                // Sin dead zone = sin saltos. El EMA naturalmente cancela ruido aleatorio.
+                const rawAlpha = this.data.minAlpha + 
+                    Math.min(avgSpeed * this.data.speedSensitivity, this.data.maxAlpha - this.data.minAlpha);
 
-                this._smoothedScale.lerp(avgScale, f);
+                // Hacer frame-rate independiente (normalizado a 60fps)
+                const dt = Math.min(delta || 16.67, 50) / 1000;
+                const alpha = 1 - Math.pow(1 - rawAlpha, dt * 60);
 
-                // === PASO 8: Aplicar al objeto visible ===
-                selfObj.position.copy(this._smoothedPos);
-                selfObj.quaternion.copy(this._smoothedQuat);
-                selfObj.scale.copy(this._smoothedScale);
+                // Interpolar suavemente — SIN condiciones, SIN dead zones
+                this._pos.lerp(p, alpha);
+                this._quat.slerp(q, alpha);
+                this._scale.lerp(s, alpha);
+
+                // Aplicar
+                self.position.copy(this._pos);
+                self.quaternion.copy(this._quat);
+                self.scale.copy(this._scale);
 
                 if (!this._visible) {
-                    selfObj.visible = true;
+                    self.visible = true;
                     this._visible = true;
                 }
             }
@@ -351,7 +282,7 @@
 
     <!-- ====== AR SCENE ====== -->
     <a-scene
-        mindar-image="imageTargetSrc: ./assets/cuadro.mind; autoStart: false; uiLoading: no; uiScanning: no; filterMinCF: 0.0001; filterBeta: 100; missTolerance: 10; warmupTolerance: 12;"
+        mindar-image="imageTargetSrc: ./assets/cuadro.mind; autoStart: false; uiLoading: no; uiScanning: no; filterMinCF: 0.05; filterBeta: 50; missTolerance: 10; warmupTolerance: 12;"
         color-space="sRGB"
         renderer="colorManagement: true; physicallyCorrectLights: true;"
         vr-mode-ui="enabled: false"
@@ -374,7 +305,7 @@
 
         <!-- CONTENIDO VISIBLE: sigue al tracker con interpolación suave (SIN jitter) -->
         <a-entity id="ar-content" visible="false"
-            smooth-follow="target: #ar-tracker; minSmoothing: 0.008; maxSmoothing: 0.9; speedThreshold: 0.012; deadZone: 0.002; rotDeadZone: 0.003; bufferSize: 12; lockAfterFrames: 8;">
+            smooth-follow="target: #ar-tracker; minAlpha: 0.03; maxAlpha: 0.7; speedSensitivity: 40; speedFrames: 5;">
 
             <!-- BASE: Fondo de Flores (z=0) — aparece primero -->
             <a-image src="#layer2" position="0 0 0" width="1.0" height="1.0"
