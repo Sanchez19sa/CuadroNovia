@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>💕 Para Ti Mi Amor</title>
+    <meta name="description" content="Una experiencia mágica de realidad aumentada creada con amor">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+    <script src="./lib/mindar-image-aframe.prod.js"></script>
+
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
+        .hidden { display: none !important; }
+
+        /* ======== LANDING SCREEN ======== */
+        #landing {
+            position: fixed; inset: 0; z-index: 100;
+            background: linear-gradient(135deg, #1a0a2e 0%, #16213e 40%, #0f3460 100%);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 20px; text-align: center;
+            transition: opacity 0.6s ease;
+        }
+        #landing.fade-out { opacity: 0; pointer-events: none; }
+
+        .landing-particles { position: absolute; inset: 0; overflow: hidden; z-index: 0; }
+        .particle {
+            position: absolute; background: rgba(192, 132, 252, 0.25); border-radius: 50%;
+            animation: float-p 6s ease-in-out infinite;
+        }
+        @keyframes float-p {
+            0%, 100% { transform: translateY(0) scale(1); opacity: 0; }
+            25% { opacity: 0.6; } 50% { transform: translateY(-40px) scale(1.5); opacity: 0.3; } 75% { opacity: 0.15; }
+        }
+
+        .landing-content { position: relative; z-index: 2; max-width: 420px; }
+
+        .heart-beat { font-size: 3rem; display: inline-block; animation: hb 1.5s ease-in-out infinite; filter: drop-shadow(0 0 18px rgba(255,107,157,0.6)); margin-bottom: 12px; }
+        @keyframes hb { 0%,100%{transform:scale(1)} 15%{transform:scale(1.25)} 30%{transform:scale(1)} 45%{transform:scale(1.15)} 60%{transform:scale(1)} }
+
+        .landing-title {
+            font-family: 'Great Vibes', cursive; font-size: 2.6rem; font-weight: 400;
+            background: linear-gradient(135deg, #ff6b9d, #c084fc, #818cf8);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 6px;
+        }
+        .landing-sub { color: rgba(255,255,255,0.45); font-size: 0.88rem; font-weight: 300; margin-bottom: 24px; }
+
+        /* Collage preview on landing */
+        .collage-link { display: block; text-decoration: none; margin: 0 auto 8px; width: 260px; cursor: pointer; }
+        .collage-preview {
+            width: 260px; height: 260px; border-radius: 12px; overflow: hidden;
+            border: 3px solid rgba(192,132,252,0.3);
+            box-shadow: 0 0 40px rgba(192,132,252,0.15); transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .collage-preview img { width: 100%; height: 100%; object-fit: cover; }
+        .collage-link:hover .collage-preview { transform: scale(1.03); box-shadow: 0 0 50px rgba(192,132,252,0.3); }
+        .collage-hint { color: rgba(255,255,255,0.35); font-size: 0.72rem; margin-bottom: 22px; }
+
+        .btn-ar {
+            background: linear-gradient(135deg, #ff6b9d, #c084fc); color: white; border: none;
+            padding: 16px 36px; border-radius: 50px; font-family: 'Inter', sans-serif;
+            font-size: 1.05rem; font-weight: 500; cursor: pointer;
+            display: inline-flex; align-items: center; gap: 10px;
+            box-shadow: 0 8px 30px rgba(192,132,252,0.35); transition: all 0.3s ease;
+        }
+        .btn-ar:hover { transform: translateY(-3px) scale(1.03); box-shadow: 0 12px 40px rgba(192,132,252,0.5); }
+        .btn-ar:active { transform: translateY(-1px) scale(0.99); }
+        .btn-ar:disabled { opacity: 0.7; cursor: wait; transform: none; }
+        .btn-ar .sparkle { animation: tw 1.5s ease-in-out infinite; }
+        @keyframes tw { 0%,100%{opacity:1;transform:scale(1)rotate(0)} 50%{opacity:0.6;transform:scale(1.2)rotate(20deg)} }
+
+        .landing-hint { color: rgba(255,255,255,0.25); font-size: 0.72rem; margin-top: 14px; }
+
+        /* ======== SCANNING OVERLAY ======== */
+        #scanning {
+            position: fixed; inset: 0; z-index: 20;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            pointer-events: none;
+        }
+        .scan-frame { width: 220px; height: 220px; position: relative; margin-bottom: 28px; }
+        .sc { position: absolute; width: 36px; height: 36px; border-color: rgba(192,132,252,0.8); border-style: solid; border-width: 0; animation: pulse-c 2s ease-in-out infinite; }
+        .sc.tl { top:0;left:0;border-top-width:3px;border-left-width:3px;border-radius:4px 0 0 0; }
+        .sc.tr { top:0;right:0;border-top-width:3px;border-right-width:3px;border-radius:0 4px 0 0; }
+        .sc.bl { bottom:0;left:0;border-bottom-width:3px;border-left-width:3px;border-radius:0 0 0 4px; }
+        .sc.br { bottom:0;right:0;border-bottom-width:3px;border-right-width:3px;border-radius:0 0 4px 0; }
+        @keyframes pulse-c { 0%,100%{opacity:0.4;border-color:rgba(192,132,252,0.4)} 50%{opacity:1;border-color:rgba(192,132,252,1)} }
+
+        .scan-label {
+            display: flex; align-items: center; gap: 10px;
+            background: rgba(0,0,0,0.55); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            padding: 12px 22px; border-radius: 50px; color: rgba(255,255,255,0.9); font-size: 0.88rem;
+            animation: fadeUp 0.6s ease;
+        }
+        .scan-label .cam-ico { animation: bob 2s ease-in-out infinite; }
+        @keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
+        @keyframes fadeUp { from{opacity:0;transform:translateY(15px)} to{opacity:1;transform:translateY(0)} }
+
+        /* ======== EFFECTS OVERLAY ======== */
+        #effects {
+            position: fixed; inset: 0; z-index: 25; pointer-events: none;
+            animation: eff-in 0.5s ease;
+        }
+        @keyframes eff-in { from{opacity:0} to{opacity:1} }
+
+        /* Flowers */
+        .fl {
+            position: absolute; opacity: 0;
+            animation: fl-in 0.8s ease forwards, fl-bob var(--dur, 3s) ease-in-out infinite;
+            animation-delay: var(--d, 0s), var(--d, 0s);
+            transform: rotate(var(--rot, 0deg));
+        }
+        .fl img { width: 100%; height: 100%; object-fit: contain; clip-path: circle(46%); filter: drop-shadow(0 4px 12px rgba(0,0,0,0.2)); }
+        @keyframes fl-in { from{opacity:0;transform:scale(0.3)rotate(var(--rot,0deg))} to{opacity:1;transform:scale(1)rotate(var(--rot,0deg))} }
+        @keyframes fl-bob { 0%,100%{transform:translateY(0)rotate(var(--rot,0deg))} 50%{transform:translateY(-10px)rotate(calc(var(--rot,0deg)+3deg))} }
+
+        .fl-1{top:2%;left:2%;width:90px;height:90px} .fl-2{top:2%;right:2%;width:85px;height:85px}
+        .fl-3{bottom:18%;left:2%;width:80px;height:80px} .fl-4{bottom:18%;right:2%;width:95px;height:95px}
+        .fl-5{top:5%;left:38%;width:70px;height:70px} .fl-6{top:30%;right:1%;width:68px;height:68px}
+        .fl-7{bottom:30%;left:1%;width:75px;height:75px} .fl-8{bottom:20%;left:40%;width:70px;height:70px}
+        .fl-9{top:15%;left:8%;width:58px;height:58px} .fl-10{top:20%;right:8%;width:62px;height:62px}
+        .fl-11{bottom:35%;right:6%;width:55px;height:55px} .fl-12{top:42%;left:4%;width:60px;height:60px}
+
+        /* Sparkles */
+        .sparkle {
+            position: absolute; animation: sparkle-a 1.5s ease-in-out forwards;
+            text-shadow: 0 0 10px currentColor;
+        }
+        @keyframes sparkle-a {
+            0%{transform:scale(0)rotate(0);opacity:0} 30%{opacity:1}
+            50%{transform:scale(1.2)rotate(180deg);opacity:1} 100%{transform:scale(0)rotate(360deg);opacity:0}
+        }
+
+        /* Floating hearts */
+        .fh {
+            position: absolute; bottom: -30px;
+            animation: fh-up 5s ease-out forwards;
+            filter: drop-shadow(0 2px 6px rgba(255,107,157,0.3));
+        }
+        @keyframes fh-up {
+            0%{transform:translateY(0)scale(0.5)rotate(0);opacity:0}
+            10%{opacity:1;transform:translateY(-5vh)scale(1)rotate(-5deg)}
+            50%{opacity:0.9;transform:translateY(-45vh)scale(1.1)rotate(5deg)}
+            85%{opacity:0.5} 100%{transform:translateY(-95vh)scale(0.8)rotate(-3deg);opacity:0}
+        }
+
+        /* Love message */
+        .msg-wrap {
+            position: absolute; bottom: 6%; left: 50%; transform: translateX(-50%);
+            text-align: center; animation: msg-in 1.2s ease forwards; animation-delay: 1s; opacity: 0;
+        }
+        @keyframes msg-in { from{opacity:0;transform:translateX(-50%)translateY(20px)scale(0.8)} to{opacity:1;transform:translateX(-50%)translateY(0)scale(1)} }
+
+        .msg-glow {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+            width: 280px; height: 70px;
+            background: radial-gradient(ellipse, rgba(192,132,252,0.25) 0%, transparent 70%);
+            border-radius: 50%; animation: glow-p 3s ease-in-out infinite;
+        }
+        @keyframes glow-p { 0%,100%{transform:translate(-50%,-50%)scale(1);opacity:0.6} 50%{transform:translate(-50%,-50%)scale(1.15);opacity:1} }
+
+        .msg-text {
+            position: relative; display: flex; align-items: center; gap: 10px;
+            padding: 14px 28px;
+            background: rgba(0,0,0,0.45); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            border-radius: 50px; border: 1px solid rgba(192,132,252,0.3);
+        }
+        .love-text {
+            font-family: 'Great Vibes', cursive; font-size: 1.9rem; color: #fff;
+            text-shadow: 0 0 20px rgba(255,107,157,0.5), 0 0 40px rgba(192,132,252,0.3), 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .sp-lr { font-size: 1.1rem; animation: tw-sp 2s ease-in-out infinite; }
+        .sp-lr:last-child { animation-delay: 0.5s; }
+        @keyframes tw-sp { 0%,100%{transform:scale(1)rotate(0);opacity:0.8} 25%{transform:scale(1.3)rotate(10deg);opacity:1} 50%{transform:scale(0.9)rotate(-5deg);opacity:0.6} 75%{transform:scale(1.2)rotate(8deg);opacity:1} }
+
+        /* Music button */
+        .music-btn {
+            position: fixed; bottom: 20px; right: 20px; z-index: 30;
+            width: 48px; height: 48px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(0,0,0,0.5); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            color: white; font-size: 1.3rem; cursor: pointer; pointer-events: auto;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: all 0.3s;
+        }
+        .music-btn:hover { transform: scale(1.1); }
+
+        /* A-Frame overrides */
+        .a-enter-vr { display: none !important; }
+        a-scene { position: fixed !important; top: 0; left: 0; z-index: 1; }
+
+        /* Small screens */
+        @media (max-height: 700px) {
+            .fl-1,.fl-2,.fl-3,.fl-4 { width: 70px; height: 70px; }
+            .fl-5,.fl-6,.fl-7,.fl-8 { width: 55px; height: 55px; }
+            .fl-9,.fl-10,.fl-11,.fl-12 { width: 45px; height: 45px; }
+            .love-text { font-size: 1.5rem; }
+            .msg-wrap { bottom: 4%; }
+            .landing-title { font-size: 2rem; }
+            .collage-preview { width: 200px; height: 200px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== LANDING ====== -->
+    <div id="landing">
+        <div class="landing-particles" id="particles"></div>
+        <div class="landing-content">
+            <div class="heart-beat">💕</div>
+            <h1 class="landing-title">Para Ti Mi Amor</h1>
+            <p class="landing-sub">Una experiencia mágica te espera</p>
+
+            <a href="./assets/collage-cuadro.png" target="_blank" class="collage-link" title="Ver imagen completa">
+                <div class="collage-preview">
+                    <img src="./assets/collage-cuadro.png" alt="Nuestras fotos">
+                </div>
+            </a>
+            <p class="collage-hint">Toca la imagen para verla completa 🔍</p>
+
+            <button class="btn-ar" id="btn-start">
+                <span>Activar Realidad Aumentada</span>
+                <span class="sparkle">✨</span>
+            </button>
+            <p class="landing-hint">Se necesita acceso a la cámara</p>
+        </div>
+    </div>
+
+    <!-- ====== SCANNING ====== -->
+    <div id="scanning" class="hidden">
+        <div class="scan-frame">
+            <div class="sc tl"></div><div class="sc tr"></div>
+            <div class="sc bl"></div><div class="sc br"></div>
+        </div>
+        <div class="scan-label">
+            <span class="cam-ico">📸</span>
+            <span>Apunta la cámara al cuadro</span>
+        </div>
+    </div>
+
+    <!-- ====== EFFECTS ====== -->
+    <div id="effects" class="hidden">
+        <!-- Flowers -->
+        <div class="fl fl-1" style="--d:0s;--dur:2.8s;--rot:-15deg"><img src="./assets/flores/flower1.png" alt=""></div>
+        <div class="fl fl-2" style="--d:.15s;--dur:3.2s;--rot:12deg"><img src="./assets/flores/flower2.png" alt=""></div>
+        <div class="fl fl-3" style="--d:.3s;--dur:2.5s;--rot:20deg"><img src="./assets/flores/flower3.png" alt=""></div>
+        <div class="fl fl-4" style="--d:.45s;--dur:3s;--rot:-10deg"><img src="./assets/flores/flower1.png" alt=""></div>
+        <div class="fl fl-5" style="--d:.2s;--dur:3.4s;--rot:5deg"><img src="./assets/flores/flower2.png" alt=""></div>
+        <div class="fl fl-6" style="--d:.35s;--dur:2.6s;--rot:-8deg"><img src="./assets/flores/flower3.png" alt=""></div>
+        <div class="fl fl-7" style="--d:.5s;--dur:3.1s;--rot:15deg"><img src="./assets/flores/flower1.png" alt=""></div>
+        <div class="fl fl-8" style="--d:.6s;--dur:2.9s;--rot:-18deg"><img src="./assets/flores/flower2.png" alt=""></div>
+        <div class="fl fl-9" style="--d:.7s;--dur:3.3s;--rot:8deg"><img src="./assets/flores/flower3.png" alt=""></div>
+        <div class="fl fl-10" style="--d:.55s;--dur:2.7s;--rot:-22deg"><img src="./assets/flores/flower1.png" alt=""></div>
+        <div class="fl fl-11" style="--d:.8s;--dur:3.5s;--rot:10deg"><img src="./assets/flores/flower2.png" alt=""></div>
+        <div class="fl fl-12" style="--d:.4s;--dur:2.4s;--rot:-5deg"><img src="./assets/flores/flower3.png" alt=""></div>
+
+        <!-- Sparkles/hearts containers -->
+        <div id="sparkles-c"></div>
+        <div id="hearts-c"></div>
+
+        <!-- Love message -->
+        <div class="msg-wrap" id="love-msg">
+            <div class="msg-glow"></div>
+            <div class="msg-text">
+                <span class="sp-lr">✨</span>
+                <span class="love-text">Te amo mi vida</span>
+                <span class="sp-lr">✨</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== MUSIC ====== -->
+    <button class="music-btn hidden" id="music-btn" aria-label="Música">
+        <span id="music-ico">🎵</span>
+    </button>
+    <audio id="bgm" loop preload="auto">
+        <source src="./assets/musica.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- ====== AR SCENE ====== -->
+    <a-scene
+        mindar-image="imageTargetSrc: ./assets/cuadro.mind; autoStart: false; uiLoading: no; uiScanning: no; filterMinCF: 0.001; filterBeta: 1000;"
+        color-space="sRGB"
+        renderer="colorManagement: true; physicallyCorrectLights: true;"
+        vr-mode-ui="enabled: false"
+        device-orientation-permission-ui="enabled: false"
+    >
+        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+        <a-entity mindar-image-target="targetIndex: 0">
+            <a-plane position="0 0 0.01" width="1.05" height="1.05"
+                material="color: #c084fc; opacity: 0.06; transparent: true; shader: flat;"
+                animation="property: material.opacity; from: 0; to: 0.06; dur: 1500; easing: easeInOutQuad"
+            ></a-plane>
+        </a-entity>
+    </a-scene>
+
+    <script>
+        // === State ===
+        let musicPlaying = false, sparkleInt = null, heartInt = null;
+        const landing = document.getElementById('landing');
+        const scanning = document.getElementById('scanning');
+        const effects = document.getElementById('effects');
+        const musicBtn = document.getElementById('music-btn');
+        const musicIco = document.getElementById('music-ico');
+        const bgm = document.getElementById('bgm');
+        const scene = document.querySelector('a-scene');
+        const target = document.querySelector('[mindar-image-target]');
+
+        // === Particles ===
+        (function() {
+            const c = document.getElementById('particles');
+            for (let i = 0; i < 18; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                p.style.left = Math.random()*100+'%';
+                p.style.top = Math.random()*100+'%';
+                p.style.animationDuration = (Math.random()*4+2)+'s';
+                p.style.animationDelay = (Math.random()*3)+'s';
+                p.style.width = p.style.height = (Math.random()*4+2)+'px';
+                c.appendChild(p);
+            }
+        })();
+
+        // === Start AR ===
+        document.getElementById('btn-start').addEventListener('click', async function() {
+            this.disabled = true;
+            this.innerHTML = '<span>Iniciando cámara...</span>';
+            try { bgm.load(); } catch(e) {}
+
+            scene.addEventListener('arReady', () => {
+                landing.classList.add('fade-out');
+                setTimeout(() => { landing.classList.add('hidden'); scanning.classList.remove('hidden'); }, 600);
+            });
+            scene.addEventListener('arError', () => {
+                this.disabled = false;
+                this.innerHTML = '<span>Error. Intenta de nuevo</span>';
+            });
+
+            try {
+                const sys = scene.systems['mindar-image-system'];
+                await sys.start();
+            } catch(e) {
+                console.error('AR start failed:', e);
+                this.disabled = false;
+                this.innerHTML = '<span>Error: ' + e.message + '</span>';
+            }
+        });
+
+        // === Target found/lost ===
+        target.addEventListener('targetFound', () => {
+            scanning.classList.add('hidden');
+            effects.classList.remove('hidden');
+            musicBtn.classList.remove('hidden');
+            startSparkles(); startHearts();
+            bgm.play().then(() => { musicPlaying = true; musicIco.textContent = '🎵'; }).catch(() => {});
+        });
+
+        target.addEventListener('targetLost', () => {
+            effects.classList.add('hidden');
+            scanning.classList.remove('hidden');
+            stopSparkles(); stopHearts();
+            bgm.pause(); musicPlaying = false; musicIco.textContent = '🔇';
+        });
+
+        // === Music toggle ===
+        musicBtn.addEventListener('click', e => {
+            e.stopPropagation();
+            if (musicPlaying) { bgm.pause(); musicPlaying = false; musicIco.textContent = '🔇'; }
+            else { bgm.play().then(() => { musicPlaying = true; musicIco.textContent = '🎵'; }).catch(() => {}); }
+        });
+
+        // === Sparkles ===
+        function mkSparkle() {
+            const c = document.getElementById('sparkles-c'); if(!c) return;
+            const s = document.createElement('div'); s.className = 'sparkle'; s.innerHTML = '✦';
+            s.style.left = (Math.random()*90+5)+'%'; s.style.top = (Math.random()*80+5)+'%';
+            s.style.fontSize = (Math.random()*14+8)+'px'; s.style.animationDuration = (Math.random()*1.5+1)+'s';
+            const colors = ['#ffd700','#fff','#c084fc','#ff6b9d','#818cf8'];
+            s.style.color = colors[Math.floor(Math.random()*colors.length)];
+            c.appendChild(s); s.addEventListener('animationend', () => s.remove());
+        }
+        function startSparkles() { for(let i=0;i<8;i++) setTimeout(mkSparkle,i*100); sparkleInt = setInterval(mkSparkle,250); }
+        function stopSparkles() { clearInterval(sparkleInt); sparkleInt = null; }
+
+        // === Hearts ===
+        function mkHeart() {
+            const c = document.getElementById('hearts-c'); if(!c) return;
+            const h = document.createElement('div'); h.className = 'fh';
+            const hs = ['💕','💖','💗','💝','❤️','🩷','🤍'];
+            h.textContent = hs[Math.floor(Math.random()*hs.length)];
+            h.style.left = (Math.random()*80+10)+'%'; h.style.fontSize = (Math.random()*16+14)+'px';
+            h.style.animationDuration = (Math.random()*3+4)+'s';
+            c.appendChild(h); h.addEventListener('animationend', () => h.remove());
+        }
+        function startHearts() { mkHeart(); heartInt = setInterval(mkHeart,800); }
+        function stopHearts() { clearInterval(heartInt); heartInt = null; }
+    </script>
+</body>
+</html>

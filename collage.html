@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>💕 Crea Tu Collage de Amor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            min-height: 100vh;
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        /* ===== Header ===== */
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .header h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.4rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ff6b9d, #c084fc, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: rgba(255, 255, 255, 0.6);
+            font-weight: 300;
+            font-size: 0.95rem;
+        }
+
+        /* ===== Controls ===== */
+        .controls-bar {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .toggle-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.08);
+            padding: 8px 20px;
+            border-radius: 50px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .toggle-group span {
+            font-size: 0.85rem;
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .toggle {
+            position: relative;
+            width: 48px;
+            height: 26px;
+            cursor: pointer;
+        }
+
+        .toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-track {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: #3a3a5c;
+            border-radius: 26px;
+            transition: background 0.35s ease;
+        }
+
+        .toggle-track::before {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #fff;
+            bottom: 3px;
+            left: 3px;
+            transition: transform 0.35s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .toggle input:checked + .toggle-track {
+            background: linear-gradient(135deg, #ff6b9d, #c084fc);
+        }
+
+        .toggle input:checked + .toggle-track::before {
+            transform: translateX(22px);
+        }
+
+        /* ===== Collage Container ===== */
+        .collage-wrapper {
+            position: relative;
+            margin: 10px 0 25px;
+            border-radius: 8px;
+            padding: 3px;
+            background: linear-gradient(135deg, #ff6b9d, #c084fc, #818cf8, #ff6b9d);
+            background-size: 300% 300%;
+            animation: gradient-border 4s ease infinite;
+        }
+
+        @keyframes gradient-border {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        #collage-container {
+            display: grid;
+            grid-template-columns: repeat(3, 180px);
+            grid-template-rows: repeat(3, 180px);
+            gap: 8px;
+            padding: 28px;
+            background: #ffffff;
+            border: 14px solid #1a1a1a;
+            border-radius: 5px;
+        }
+
+        .photo-cell {
+            width: 180px;
+            height: 180px;
+            background: #f5f5f5;
+            cursor: pointer;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+            border: 1px solid #e8e8e8;
+        }
+
+        .photo-cell:hover {
+            transform: scale(1.03);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            z-index: 2;
+        }
+
+        .photo-cell img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            transition: filter 0.4s ease;
+        }
+
+        .photo-cell.grayscale img {
+            filter: grayscale(100%);
+        }
+
+        /* Placeholder styling */
+        .placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            color: #bbb;
+            font-size: 0.75rem;
+            font-weight: 500;
+            pointer-events: none;
+        }
+
+        .placeholder .cell-number {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #e8e8e8, #d4d4d4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #999;
+        }
+
+        .placeholder svg {
+            width: 28px;
+            height: 28px;
+            stroke: #ccc;
+            stroke-width: 1.5;
+            fill: none;
+        }
+
+        /* ===== Action Buttons ===== */
+        .actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 25px;
+        }
+
+        .btn {
+            padding: 14px 32px;
+            border: none;
+            border-radius: 50px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            letter-spacing: 0.02em;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #ff6b9d, #c084fc);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(192, 132, 252, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(192, 132, 252, 0.5);
+        }
+
+        .btn-primary:active {
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* ===== Info Cards ===== */
+        .info-card {
+            max-width: 640px;
+            width: 100%;
+            padding: 24px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .info-card h3 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.15rem;
+            color: #c084fc;
+            margin-bottom: 12px;
+        }
+
+        .info-card p, .info-card li {
+            color: rgba(255, 255, 255, 0.65);
+            font-size: 0.88rem;
+            line-height: 1.7;
+        }
+
+        .info-card ol {
+            padding-left: 20px;
+        }
+
+        .info-card li {
+            margin-bottom: 4px;
+        }
+
+        .info-card a {
+            color: #c084fc;
+            text-decoration: underline;
+            text-underline-offset: 3px;
+        }
+
+        /* ===== Success Toast ===== */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            padding: 16px 32px;
+            border-radius: 16px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            box-shadow: 0 10px 40px rgba(16, 185, 129, 0.3);
+            transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            z-index: 100;
+            text-align: center;
+            max-width: 90%;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* ===== Responsive ===== */
+        @media (max-width: 650px) {
+            .header h1 { font-size: 1.8rem; }
+
+            #collage-container {
+                grid-template-columns: repeat(3, 100px);
+                grid-template-rows: repeat(3, 100px);
+                padding: 14px;
+                border-width: 8px;
+                gap: 5px;
+            }
+
+            .photo-cell {
+                width: 100px;
+                height: 100px;
+            }
+
+            .placeholder .cell-number {
+                width: 24px;
+                height: 24px;
+                font-size: 0.75rem;
+            }
+
+            .placeholder svg { display: none; }
+            .placeholder span:last-child { font-size: 0.65rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>💕 Crea Tu Collage</h1>
+        <p>Haz clic en cada celda para agregar tus fotos favoritas</p>
+    </div>
+
+    <div class="controls-bar">
+        <div class="toggle-group">
+            <span>Color</span>
+            <label class="toggle">
+                <input type="checkbox" id="bw-toggle" checked>
+                <span class="toggle-track"></span>
+            </label>
+            <span>Blanco & Negro</span>
+        </div>
+    </div>
+
+    <div class="collage-wrapper">
+        <div id="collage-container">
+            <!-- 9 cells generated by JS -->
+        </div>
+    </div>
+
+    <div class="actions">
+        <button class="btn btn-primary" id="btn-download" onclick="downloadCollage()" disabled>
+            📥 Descargar Collage HD
+        </button>
+        <button class="btn btn-secondary" onclick="clearAll()">
+            🗑️ Limpiar Todo
+        </button>
+    </div>
+
+    <div class="info-card">
+        <h3>📋 ¿Cómo funciona?</h3>
+        <ol>
+            <li>Haz clic en cada celda y selecciona una foto</li>
+            <li>Activa o desactiva el filtro <strong>Blanco & Negro</strong></li>
+            <li>Cuando estés listo, descarga el collage en alta resolución</li>
+            <li>Usa esa imagen para <strong>imprimir tu cuadro</strong> y para la <strong>experiencia AR</strong></li>
+        </ol>
+    </div>
+
+    <div class="info-card">
+        <h3>🔮 Siguiente paso: Compilar para AR</h3>
+        <p>
+            Después de descargar tu collage, ve al
+            <a href="https://hiukim.github.io/mind-ar-js-doc/tools/compile/" target="_blank" rel="noopener">
+                Compilador de MindAR
+            </a>
+            y sube tu imagen para generar el archivo <code>.mind</code> necesario para la realidad aumentada.
+        </p>
+    </div>
+
+    <!-- Toast notification -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const container = document.getElementById('collage-container');
+        const bwToggle = document.getElementById('bw-toggle');
+        const downloadBtn = document.getElementById('btn-download');
+        let photosLoaded = 0;
+
+        // Create 9 cells
+        for (let i = 0; i < 9; i++) {
+            const cell = document.createElement('div');
+            cell.className = 'photo-cell' + (bwToggle.checked ? ' grayscale' : '');
+            cell.dataset.index = i;
+            cell.innerHTML = createPlaceholder(i + 1);
+            cell.addEventListener('click', () => openFileDialog(i));
+            container.appendChild(cell);
+
+            // Hidden file input
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.id = `file-input-${i}`;
+            input.style.display = 'none';
+            input.addEventListener('change', (e) => handleFileSelect(e, i));
+            document.body.appendChild(input);
+        }
+
+        function createPlaceholder(num) {
+            return `
+                <div class="placeholder">
+                    <div class="cell-number">${num}</div>
+                    <svg viewBox="0 0 24 24">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                        <circle cx="8.5" cy="8.5" r="1.5"/>
+                        <polyline points="21,15 16,10 5,21"/>
+                    </svg>
+                    <span>Clic para agregar</span>
+                </div>
+            `;
+        }
+
+        function openFileDialog(index) {
+            document.getElementById(`file-input-${index}`).click();
+        }
+
+        function handleFileSelect(event, index) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const cell = container.children[index];
+                const hadPhoto = cell.querySelector('img') !== null;
+
+                cell.innerHTML = `<img src="${e.target.result}" alt="Foto ${index + 1}">`;
+
+                if (!hadPhoto) {
+                    photosLoaded++;
+                    updateDownloadBtn();
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function updateDownloadBtn() {
+            downloadBtn.disabled = photosLoaded === 0;
+            if (photosLoaded === 9) {
+                showToast('🎉 ¡Todas las fotos cargadas! Ya puedes descargar tu collage');
+            }
+        }
+
+        // B&W toggle
+        bwToggle.addEventListener('change', () => {
+            const cells = container.querySelectorAll('.photo-cell');
+            cells.forEach(cell => {
+                cell.classList.toggle('grayscale', bwToggle.checked);
+            });
+        });
+
+        // Clear all
+        function clearAll() {
+            photosLoaded = 0;
+            const cells = container.querySelectorAll('.photo-cell');
+            cells.forEach((cell, i) => {
+                cell.innerHTML = createPlaceholder(i + 1);
+                document.getElementById(`file-input-${i}`).value = '';
+            });
+            updateDownloadBtn();
+            showToast('🗑️ Collage limpiado');
+        }
+
+        // Download collage as high-res PNG
+        async function downloadCollage() {
+            downloadBtn.disabled = true;
+            downloadBtn.textContent = '⏳ Generando imagen HD...';
+
+            try {
+                const canvas = await html2canvas(container, {
+                    scale: 5,
+                    useCORS: true,
+                    backgroundColor: '#ffffff',
+                    logging: false,
+                });
+
+                const link = document.createElement('a');
+                link.download = 'collage-cuadro-amor.png';
+                link.href = canvas.toDataURL('image/png', 1.0);
+                link.click();
+
+                showToast('✅ ¡Collage descargado! Ahora compílalo en MindAR para la experiencia AR');
+            } catch (error) {
+                console.error('Error generating collage:', error);
+                showToast('❌ Error al generar. Intenta de nuevo.');
+            } finally {
+                downloadBtn.disabled = false;
+                downloadBtn.innerHTML = '📥 Descargar Collage HD';
+            }
+        }
+
+        // Toast notification
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 4000);
+        }
+    </script>
+</body>
+</html>

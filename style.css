@@ -1,0 +1,588 @@
+/* =============================================
+   💕 Cuadro AR - Estilos de la Experiencia AR
+   ============================================= */
+
+/* ===== Reset & Base ===== */
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: 'Inter', -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ===== Utility Classes ===== */
+.hidden {
+    display: none !important;
+}
+
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10;
+    pointer-events: none;
+}
+
+/* =============================================
+   LOADING SCREEN
+   ============================================= */
+#loading-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 100;
+    background: linear-gradient(135deg, #1a0a2e 0%, #16213e 40%, #0f3460 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.6s ease;
+}
+
+#loading-screen.fade-out {
+    opacity: 0;
+}
+
+.loading-content {
+    text-align: center;
+    z-index: 2;
+    padding: 20px;
+}
+
+/* Heart animation */
+.heart-icon {
+    margin-bottom: 20px;
+}
+
+.heart-pulse {
+    font-size: 4rem;
+    display: inline-block;
+    animation: heartbeat 1.5s ease-in-out infinite;
+    filter: drop-shadow(0 0 20px rgba(255, 107, 157, 0.6));
+}
+
+@keyframes heartbeat {
+    0%, 100% { transform: scale(1); }
+    15% { transform: scale(1.25); }
+    30% { transform: scale(1); }
+    45% { transform: scale(1.15); }
+    60% { transform: scale(1); }
+}
+
+/* Title */
+.loading-title {
+    font-family: 'Great Vibes', cursive;
+    font-size: 3rem;
+    font-weight: 400;
+    background: linear-gradient(135deg, #ff6b9d, #c084fc, #818cf8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+    text-shadow: none;
+}
+
+.loading-subtitle {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.9rem;
+    font-weight: 300;
+    margin-bottom: 35px;
+    letter-spacing: 0.05em;
+}
+
+/* Start button */
+.start-button {
+    background: linear-gradient(135deg, #ff6b9d, #c084fc);
+    color: white;
+    border: none;
+    padding: 16px 40px;
+    border-radius: 50px;
+    font-family: 'Inter', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 30px rgba(192, 132, 252, 0.35);
+    pointer-events: auto;
+}
+
+.start-button:hover {
+    transform: translateY(-3px) scale(1.03);
+    box-shadow: 0 12px 40px rgba(192, 132, 252, 0.5);
+}
+
+.start-button:active {
+    transform: translateY(-1px) scale(0.99);
+}
+
+.start-button:disabled {
+    opacity: 0.7;
+    cursor: wait;
+    transform: none;
+}
+
+.sparkle-icon {
+    animation: twinkle 1.5s ease-in-out infinite;
+}
+
+@keyframes twinkle {
+    0%, 100% { opacity: 1; transform: scale(1) rotate(0deg); }
+    50% { opacity: 0.6; transform: scale(1.2) rotate(20deg); }
+}
+
+.loading-hint {
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 0.75rem;
+    margin-top: 15px;
+}
+
+/* Loading background particles */
+.loading-particles {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    z-index: 1;
+}
+
+.loading-particle {
+    position: absolute;
+    background: rgba(192, 132, 252, 0.3);
+    border-radius: 50%;
+    animation: float-particle 6s ease-in-out infinite;
+}
+
+@keyframes float-particle {
+    0%, 100% { transform: translateY(0) scale(1); opacity: 0; }
+    25% { opacity: 0.6; }
+    50% { transform: translateY(-40px) scale(1.5); opacity: 0.4; }
+    75% { opacity: 0.2; }
+}
+
+/* =============================================
+   SCANNING OVERLAY
+   ============================================= */
+#scanning-overlay {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 15;
+}
+
+.scan-frame {
+    width: 240px;
+    height: 240px;
+    position: relative;
+    margin-bottom: 30px;
+}
+
+.scan-corner {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    border-color: rgba(192, 132, 252, 0.8);
+    border-style: solid;
+    border-width: 0;
+    animation: pulse-corner 2s ease-in-out infinite;
+}
+
+.scan-corner.tl { top: 0; left: 0; border-top-width: 3px; border-left-width: 3px; border-radius: 4px 0 0 0; }
+.scan-corner.tr { top: 0; right: 0; border-top-width: 3px; border-right-width: 3px; border-radius: 0 4px 0 0; }
+.scan-corner.bl { bottom: 0; left: 0; border-bottom-width: 3px; border-left-width: 3px; border-radius: 0 0 0 4px; }
+.scan-corner.br { bottom: 0; right: 0; border-bottom-width: 3px; border-right-width: 3px; border-radius: 0 0 4px 0; }
+
+@keyframes pulse-corner {
+    0%, 100% { opacity: 0.5; border-color: rgba(192, 132, 252, 0.5); }
+    50% { opacity: 1; border-color: rgba(192, 132, 252, 1); }
+}
+
+.scan-text {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    padding: 12px 24px;
+    border-radius: 50px;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.9rem;
+    font-weight: 400;
+    animation: fade-in-up 0.6s ease;
+}
+
+.scan-icon {
+    font-size: 1.2rem;
+    animation: gentle-bounce 2s ease-in-out infinite;
+}
+
+@keyframes gentle-bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+}
+
+@keyframes fade-in-up {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* =============================================
+   EFFECTS OVERLAY
+   ============================================= */
+#effects-overlay {
+    z-index: 20;
+    animation: overlay-appear 0.5s ease;
+}
+
+@keyframes overlay-appear {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* ===== Flowers ===== */
+.flowers-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.flower {
+    position: absolute;
+    opacity: 0;
+    animation:
+        flower-appear 0.8s ease forwards,
+        flower-float var(--float-dur, 3s) ease-in-out infinite;
+    animation-delay: var(--delay, 0s), var(--delay, 0s);
+    transform: rotate(var(--rotation, 0deg));
+}
+
+.flower img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    clip-path: circle(46%);
+    filter: drop-shadow(0 4px 12px rgba(0,0,0,0.2));
+}
+
+@keyframes flower-appear {
+    from { opacity: 0; transform: scale(0.3) rotate(var(--rotation, 0deg)); }
+    to { opacity: 1; transform: scale(1) rotate(var(--rotation, 0deg)); }
+}
+
+@keyframes flower-float {
+    0%, 100% { transform: translateY(0) rotate(var(--rotation, 0deg)); }
+    50% { transform: translateY(-10px) rotate(calc(var(--rotation, 0deg) + 3deg)); }
+}
+
+/* Flower positions - corners */
+.flower-1 { top: 2%; left: 2%; width: 100px; height: 100px; }
+.flower-2 { top: 2%; right: 2%; width: 95px; height: 95px; }
+.flower-3 { bottom: 18%; left: 2%; width: 90px; height: 90px; }
+.flower-4 { bottom: 18%; right: 2%; width: 105px; height: 105px; }
+
+/* Flower positions - edges */
+.flower-5 { top: 5%; left: 38%; width: 80px; height: 80px; }
+.flower-6 { top: 30%; right: 1%; width: 75px; height: 75px; }
+.flower-7 { bottom: 30%; left: 1%; width: 85px; height: 85px; }
+.flower-8 { bottom: 20%; left: 40%; width: 78px; height: 78px; }
+
+/* Flower positions - scattered */
+.flower-9 { top: 15%; left: 8%; width: 65px; height: 65px; }
+.flower-10 { top: 20%; right: 8%; width: 70px; height: 70px; }
+.flower-11 { bottom: 35%; right: 6%; width: 60px; height: 60px; }
+.flower-12 { top: 42%; left: 4%; width: 68px; height: 68px; }
+
+/* ===== Sparkles ===== */
+.sparkles-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.sparkle {
+    position: absolute;
+    animation: sparkle-anim 1.5s ease-in-out forwards;
+    text-shadow: 0 0 10px currentColor;
+}
+
+@keyframes sparkle-anim {
+    0% { transform: scale(0) rotate(0deg); opacity: 0; }
+    30% { opacity: 1; }
+    50% { transform: scale(1.2) rotate(180deg); opacity: 1; }
+    100% { transform: scale(0) rotate(360deg); opacity: 0; }
+}
+
+/* ===== Floating Hearts ===== */
+.hearts-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.floating-heart {
+    position: absolute;
+    bottom: -30px;
+    animation: heart-float-up 5s ease-out forwards;
+    filter: drop-shadow(0 2px 6px rgba(255, 107, 157, 0.3));
+}
+
+@keyframes heart-float-up {
+    0% {
+        transform: translateY(0) scale(0.5) rotate(0deg);
+        opacity: 0;
+    }
+    10% {
+        opacity: 1;
+        transform: translateY(-5vh) scale(1) rotate(-5deg);
+    }
+    50% {
+        opacity: 0.9;
+        transform: translateY(-45vh) scale(1.1) rotate(5deg);
+    }
+    85% {
+        opacity: 0.5;
+    }
+    100% {
+        transform: translateY(-95vh) scale(0.8) rotate(-3deg);
+        opacity: 0;
+    }
+}
+
+/* ===== Love Message ===== */
+.love-message-wrapper {
+    position: absolute;
+    bottom: 6%;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    animation: message-appear 1.2s ease forwards;
+    animation-delay: 1s;
+    opacity: 0;
+}
+
+@keyframes message-appear {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px) scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0) scale(1);
+    }
+}
+
+.love-message-glow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 300px;
+    height: 80px;
+    background: radial-gradient(ellipse, rgba(192, 132, 252, 0.25) 0%, transparent 70%);
+    border-radius: 50%;
+    animation: glow-pulse 3s ease-in-out infinite;
+}
+
+@keyframes glow-pulse {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.6; }
+    50% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
+}
+
+.love-message-text {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 30px;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border-radius: 50px;
+    border: 1px solid rgba(192, 132, 252, 0.3);
+}
+
+.love-text {
+    font-family: 'Great Vibes', cursive;
+    font-size: 2rem;
+    color: #ffffff;
+    text-shadow:
+        0 0 20px rgba(255, 107, 157, 0.5),
+        0 0 40px rgba(192, 132, 252, 0.3),
+        0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.sparkle-left, .sparkle-right {
+    font-size: 1.2rem;
+    animation: twinkle-sparkle 2s ease-in-out infinite;
+}
+
+.sparkle-right {
+    animation-delay: 0.5s;
+}
+
+@keyframes twinkle-sparkle {
+    0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.8; }
+    25% { transform: scale(1.3) rotate(10deg); opacity: 1; }
+    50% { transform: scale(0.9) rotate(-5deg); opacity: 0.6; }
+    75% { transform: scale(1.2) rotate(8deg); opacity: 1; }
+}
+
+/* ===== Music Button ===== */
+.music-button {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 30;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: white;
+    font-size: 1.4rem;
+    cursor: pointer;
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.music-button:hover {
+    transform: scale(1.1);
+    background: rgba(0, 0, 0, 0.7);
+}
+
+.music-button:active {
+    transform: scale(0.95);
+}
+
+/* =============================================
+   ERROR OVERLAY
+   ============================================= */
+#error-overlay {
+    z-index: 50;
+    background: linear-gradient(135deg, #1a0a2e, #16213e);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: auto;
+}
+
+.error-content {
+    max-width: 400px;
+    padding: 30px;
+    text-align: center;
+    color: white;
+}
+
+.error-icon {
+    font-size: 3rem;
+    display: block;
+    margin-bottom: 15px;
+}
+
+.error-content h2 {
+    font-size: 1.3rem;
+    margin-bottom: 12px;
+    color: #ff6b9d;
+}
+
+.error-content p {
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 20px;
+    font-size: 0.9rem;
+    line-height: 1.6;
+}
+
+.error-content ol {
+    text-align: left;
+    padding-left: 20px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.85rem;
+    line-height: 2;
+}
+
+.error-content code {
+    background: rgba(192, 132, 252, 0.2);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.82rem;
+    color: #c084fc;
+}
+
+.error-content a {
+    color: #c084fc;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+/* =============================================
+   A-FRAME OVERRIDES
+   ============================================= */
+.a-enter-vr {
+    display: none !important;
+}
+
+a-scene {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    z-index: 1;
+}
+
+/* =============================================
+   PORTRAIT ORIENTATION ADJUSTMENTS
+   ============================================= */
+@media (orientation: landscape) {
+    .flower-1 { width: 80px; height: 80px; }
+    .flower-2 { width: 75px; height: 75px; }
+    .flower-3 { width: 70px; height: 70px; }
+    .flower-4 { width: 85px; height: 85px; }
+    .flower-5, .flower-6, .flower-7, .flower-8 { width: 65px; height: 65px; }
+    .flower-9, .flower-10, .flower-11, .flower-12 { width: 55px; height: 55px; }
+
+    .love-text { font-size: 1.6rem; }
+}
+
+/* Small phone screens */
+@media (max-height: 700px) {
+    .flower-1, .flower-2, .flower-3, .flower-4 { width: 75px; height: 75px; }
+    .flower-5, .flower-6, .flower-7, .flower-8 { width: 60px; height: 60px; }
+    .flower-9, .flower-10, .flower-11, .flower-12 { width: 50px; height: 50px; }
+
+    .love-text { font-size: 1.6rem; }
+    .love-message-wrapper { bottom: 4%; }
+
+    .loading-title { font-size: 2.4rem; }
+    .heart-pulse { font-size: 3rem; }
+}
