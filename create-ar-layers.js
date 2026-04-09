@@ -15,15 +15,16 @@ const PHOTO_FILES = [
     'fotos/foto7.jpg', 'fotos/foto8.jpg', 'fotos/foto9.jpg',
 ];
 
-const FLOWER_SINGLE_FILES = [
-    'assets/flores/flower-single1.png', // Pink Cosmos
-    'assets/flores/flower-single2.png'  // Yellow Poppy
+const FLOWER_HEADS = [
+    'assets/flores/head_pink.png',
+    'assets/flores/head_yellow.png',
+    'assets/flores/head_purple.png'
 ];
 
 const BACKGROUND_IMAGE = 'C:\\Users\\Sanch\\.gemini\\antigravity\\brain\\ad7774ca-160b-4aa5-a905-b3ca85659852\\floral_background_1775710233191.png';
 
 async function createLayers() {
-    console.log('🔮 Generando capas transparentes PRO para Realidad Aumentada 3D...\n');
+    console.log('🔮 Generando capas transparentes (ESTRUCTURA EXACTA) para AR...');
 
     const outDir = path.resolve('assets', 'layers');
 
@@ -31,7 +32,6 @@ async function createLayers() {
     for (let i = 0; i < PHOTO_FILES.length; i++) {
         let buf = await sharp(PHOTO_FILES[i])
             .resize(CELL_SIZE, CELL_SIZE, { fit: 'cover', position: 'centre' })
-            .grayscale() // Dejamos las fotos en escala de grises y las flores de colores vibrantes
             .png()
             .toBuffer();
         photos.push(buf);
@@ -49,12 +49,18 @@ async function createLayers() {
         return { x, y };
     };
 
-    // LAYER 1: Full Floral Background (Reemplaza el cuadro real tapando las fotos viejas)
-    await sharp(BACKGROUND_IMAGE)
-        .resize(TOTAL_SIZE, TOTAL_SIZE, { fit: 'cover' })
+    // LAYER 2: Flores de fondo con FONDO BLANCO.
+    // Esto cubre las fotos físicas para evitar que "tiemblen" o se vean duplicadas.
+    const bgWhite = await sharp({
+        create: { width: TOTAL_SIZE, height: TOTAL_SIZE, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } }
+    }).png().toBuffer();
+    
+    // Si la imagen de fondo es muy densa, podemos bajarle su opacidad o colocar las otras, lo useremos de fondo blanco
+    await sharp(bgWhite)
+        .composite([{ input: await sharp(BACKGROUND_IMAGE).resize(TOTAL_SIZE, TOTAL_SIZE, {fit:'cover'}).toBuffer(), blend: 'over' }])
         .png()
-        .toFile(path.join(outDir, 'layer1_bg_floral.png'));
-    console.log('✅ Generada Layer 1 (Fondo Completo de Flores sobre el cuadro real)');
+        .toFile(path.join(outDir, 'layer2_bg_flowers.png'));
+    console.log('✅ Capa 2 (Fondo Blanco con Flores)');
 
     // LAYER 3: Cruz de fotos
     const crossIndices = [1, 3, 5, 7];
@@ -64,16 +70,18 @@ async function createLayers() {
         compsL3.push({ input: photos[i], left: x, top: y });
     }
     await sharp(await getBlank()).composite(compsL3).png().toFile(path.join(outDir, 'layer3_cross_photos.png'));
-    console.log('✅ Generada Layer 3');
-    
-    // LAYER 4: Flores cruz (Flores GRANDES ÚNICAS en las esquinas de algunas fotos de la cruz)
-    let compsL4 = [];
-    compsL4.push({ input: await sharp(FLOWER_SINGLE_FILES[1]).resize(450).toBuffer(), left: getCoords(1).x - 120, top: getCoords(1).y + 350 }); // Amarillo en Top
-    compsL4.push({ input: await sharp(FLOWER_SINGLE_FILES[0]).resize(500).toBuffer(), left: getCoords(5).x + 400, top: getCoords(5).y - 150 }); // Rosa en Right
-    await sharp(await getBlank()).composite(compsL4).png().toFile(path.join(outDir, 'layer4_cross_flowers.png'));
-    console.log('✅ Generada Layer 4');
+    console.log('✅ Capa 3 (Cruz)');
 
-    // LAYER 5: Esquinas
+    // LAYER 4: Florecitas de esquinas en cruz
+    let compsL4 = [];
+    compsL4.push({ input: await sharp(FLOWER_HEADS[2]).resize(300).toBuffer(), left: getCoords(1).x + 400, top: getCoords(1).y + 350 }); 
+    compsL4.push({ input: await sharp(FLOWER_HEADS[2]).resize(250).toBuffer(), left: getCoords(3).x + 350, top: getCoords(3).y - 50 }); 
+    compsL4.push({ input: await sharp(FLOWER_HEADS[2]).resize(320).toBuffer(), left: getCoords(5).x - 100, top: getCoords(5).y + 400 }); 
+    compsL4.push({ input: await sharp(FLOWER_HEADS[2]).resize(280).toBuffer(), left: getCoords(7).x + 100, top: getCoords(7).y - 120 }); 
+    await sharp(await getBlank()).composite(compsL4).png().toFile(path.join(outDir, 'layer4_cross_flowers.png'));
+    console.log('✅ Capa 4 (Flores de cruz)');
+
+    // LAYER 5: 4 Fotos de esquinas
     const cornerIndices = [0, 2, 6, 8];
     let compsL5 = [];
     for (let i of cornerIndices) {
@@ -81,28 +89,30 @@ async function createLayers() {
         compsL5.push({ input: photos[i], left: x, top: y });
     }
     await sharp(await getBlank()).composite(compsL5).png().toFile(path.join(outDir, 'layer5_corner_photos.png'));
-    console.log('✅ Generada Layer 5');
+    console.log('✅ Capa 5 (Esquinas)');
 
-    // LAYER 6: Flores esquinas (Flor Grande en la esquina Inferior Izquierda, etc.)
+    // LAYER 6: Florecitas para esquinas (otra posición)
     let compsL6 = [];
-    compsL6.push({ input: await sharp(FLOWER_SINGLE_FILES[0]).resize(600).toBuffer(), left: getCoords(0).x - 200, top: getCoords(0).y - 200 }); // Rosa Top Left
-    compsL6.push({ input: await sharp(FLOWER_SINGLE_FILES[1]).resize(550).toBuffer(), left: getCoords(8).x + 300, top: getCoords(8).y + 300 }); // Amarilla Bottom Right
+    compsL6.push({ input: await sharp(FLOWER_HEADS[1]).resize(350).toBuffer(), left: getCoords(0).x - 100, top: getCoords(0).y - 100 }); 
+    compsL6.push({ input: await sharp(FLOWER_HEADS[1]).resize(400).toBuffer(), left: getCoords(2).x + 300, top: getCoords(2).y - 50 }); 
+    compsL6.push({ input: await sharp(FLOWER_HEADS[1]).resize(350).toBuffer(), left: getCoords(6).x - 50, top: getCoords(6).y + 400 }); 
+    compsL6.push({ input: await sharp(FLOWER_HEADS[1]).resize(380).toBuffer(), left: getCoords(8).x + 350, top: getCoords(8).y + 350 }); 
     await sharp(await getBlank()).composite(compsL6).png().toFile(path.join(outDir, 'layer6_corner_flowers.png'));
-    console.log('✅ Generada Layer 6');
+    console.log('✅ Capa 6 (Flores Esquinas)');
 
-    // LAYER 7: Centro
-    const centerIndex = 4;
-    const cCoords = getCoords(centerIndex);
-    await sharp(await getBlank()).composite([{ input: photos[centerIndex], left: cCoords.x, top: cCoords.y }]).png().toFile(path.join(outDir, 'layer7_center_photo.png'));
-    console.log('✅ Generada Layer 7');
+    // LAYER 7: Imagen del centro
+    const cCoords = getCoords(4);
+    await sharp(await getBlank()).composite([{ input: photos[4], left: cCoords.x, top: cCoords.y }]).png().toFile(path.join(outDir, 'layer7_center_photo.png'));
+    console.log('✅ Capa 7 (Centro)');
 
-    // LAYER 8: Flores centro
+    // LAYER 8: Última capa con más florecitas
     let compsL8 = [];
-    compsL8.push({ input: await sharp(FLOWER_SINGLE_FILES[0]).resize(500).toBuffer(), left: cCoords.x - 150, top: cCoords.y + 450 }); // Rosa tapando la esquina inferior izquierda del centro
+    compsL8.push({ input: await sharp(FLOWER_HEADS[0]).resize(450).toBuffer(), left: cCoords.x - 100, top: cCoords.y + 400 }); 
+    compsL8.push({ input: await sharp(FLOWER_HEADS[0]).resize(400).toBuffer(), left: cCoords.x + 350, top: cCoords.y - 150 }); 
     await sharp(await getBlank()).composite(compsL8).png().toFile(path.join(outDir, 'layer8_center_flowers.png'));
-    console.log('✅ Generada Layer 8');
+    console.log('✅ Capa 8 (Flores Centro)');
 
-    console.log('🎉 ¡Nuevas Capas 3D con flores elegantes únicas completadas!');
+    console.log('🎉 Terminado.');
 }
 
 createLayers().catch(err => {
