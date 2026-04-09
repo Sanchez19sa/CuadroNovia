@@ -21,9 +21,9 @@
 
         body {
             font-family: 'Inter', -apple-system, sans-serif;
-            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            background: #f8f9fa; /* Fondo blanco/gris muy suave */
             min-height: 100vh;
-            color: #ffffff;
+            color: #1f2937; /* Texto oscuro */
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -49,9 +49,9 @@
         }
 
         .header p {
-            color: rgba(255, 255, 255, 0.6);
-            font-weight: 300;
-            font-size: 0.95rem;
+            color: #4b5563; /* Gris medio */
+            font-weight: 400;
+            font-size: 1rem;
         }
 
         /* ===== Controls ===== */
@@ -68,16 +68,17 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            background: rgba(255, 255, 255, 0.08);
+            background: #ffffff;
             padding: 8px 20px;
             border-radius: 50px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
 
         .toggle-group span {
-            font-size: 0.85rem;
-            font-weight: 400;
-            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #374151;
         }
 
         .toggle {
@@ -100,7 +101,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: #3a3a5c;
+            background: #d1d5db; /* Gris claro cuando está off */
             border-radius: 26px;
             transition: background 0.35s ease;
         }
@@ -155,9 +156,10 @@
             grid-template-rows: repeat(3, 180px);
             gap: 8px;
             padding: 28px;
-            background: #ffffff;
-            border: 14px solid #1a1a1a;
+            background: #ffffff; /* Fiel al cuadro de impresión */
+            border: 14px solid #ffffff; /* Marco totalmente blanco como te gusta */
             border-radius: 5px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08); /* Sombra suave para que el color blanco destaque del fondo gris */
         }
 
         .photo-cell {
@@ -265,14 +267,15 @@
         }
 
         .btn-secondary {
-            background: rgba(255, 255, 255, 0.08);
-            color: rgba(255, 255, 255, 0.85);
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: #ffffff;
+            color: #4b5563;
+            border: 1px solid #d1d5db;
         }
 
         .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.15);
+            background: #f3f4f6;
             transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
         }
 
         .btn:disabled {
@@ -286,24 +289,25 @@
             max-width: 640px;
             width: 100%;
             padding: 24px;
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
             border-radius: 16px;
             margin-bottom: 20px;
-            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
         }
 
         .info-card h3 {
             font-family: 'Playfair Display', serif;
             font-size: 1.15rem;
-            color: #c084fc;
+            color: #9333ea;
             margin-bottom: 12px;
+            font-weight: 600;
         }
 
         .info-card p,
         .info-card li {
-            color: rgba(255, 255, 255, 0.65);
-            font-size: 0.88rem;
+            color: #4b5563;
+            font-size: 0.95rem;
             line-height: 1.7;
         }
 
@@ -312,11 +316,11 @@
         }
 
         .info-card li {
-            margin-bottom: 4px;
+            margin-bottom: 6px;
         }
 
         .info-card a {
-            color: #c084fc;
+            color: #9333ea;
             text-decoration: underline;
             text-underline-offset: 3px;
         }
