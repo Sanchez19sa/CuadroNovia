@@ -178,21 +178,14 @@
     </audio>
 
     <script>
-        // NO SE USA GIROSCOPIO: Congelar el AR causa que se "despegue" del marco físico 
-        // cuando la cámara (video) tiembla por el pulso de la mano.
-        // La clave es que la Posición debe seguir el video casi al instante (1:1),
-        // y solo la rotación/escala deben ser suavizadas.
-        // === COMPONENTE SMOOTH-FOLLOW (DECOUPLED KINEMATICS) ===
+        // === COMPONENTE SMOOTH-FOLLOW (MAGIC LOCK DEADZONE) ===
         AFRAME.registerComponent('smooth-follow', {
             schema: {
                 target: { type: 'selector' },
-                // POSICIÓN CASI INSTANTÁNEA: Si hay temblor de mano, el objeto AR debe temblar 
-                // IGUAL que el marco de video de fondo, para que visualmente nunca se salga del marco físico.
-                posAlpha: { type: 'number', default: 0.85 },
-                // ROTACIÓN MUY SUAVE: Para que las capas en Z (fotos frontales) no se muevan de lado a lado
-                rotAlpha: { type: 'number', default: 0.15 },
-                // ESCALA MUY SUAVE: Para que el cuadro no parezca que "respira" o se hace grande/pequeño
-                scaleAlpha: { type: 'number', default: 0.10 }
+                // Suavizados de interpolación fluidos
+                posAlpha: { type: 'number', default: 0.15 },
+                rotAlpha: { type: 'number', default: 0.10 },
+                scaleAlpha: { type: 'number', default: 0.05 }
             },
             init: function() {
                 this._pos = new THREE.Vector3();
@@ -202,6 +195,11 @@
                 this._tmpP = new THREE.Vector3();
                 this._tmpQ = new THREE.Quaternion();
                 this._tmpS = new THREE.Vector3();
+
+                // Anclas de la "Zona Muerta" Absoluta
+                this._lockedP = new THREE.Vector3();
+                this._lockedQ = new THREE.Quaternion();
+                this._lockedS = new THREE.Vector3();
                 
                 this._ready = false;
             },
@@ -210,7 +208,6 @@
                 if (!tracker) return;
                 const obj3d = tracker.object3D;
 
-                // Si se pierde tracking, ocultar
                 if (!obj3d.visible) {
                     if (this.el.object3D.visible) {
                         this.el.object3D.visible = false;
@@ -219,16 +216,43 @@
                     return;
                 }
 
-                // Leer datos crudos de MindAR (pre-filtrados por OneEuro nativo)
                 const p = this._tmpP;
                 const q = this._tmpQ;
                 const s = this._tmpS;
                 obj3d.updateWorldMatrix(true, false);
                 obj3d.matrixWorld.decompose(p, q, s);
 
+                // === MAGIC LOCK (Deadzone Absoluto) ===
+                // El pulso humano SIEMPRE tiembla de 1 a 2 milímetros, causando lo que 
+                // describes como "que se acomoda a cada momento".
+                // Establecemos una "burbuja" de tolerancia milimétrica (Deadzone).
+                // Si MindAR reporta un movimiento más pequeño que nuestra burbuja,
+                // ES RUIDO DE PULSO. Lo ignoramos por completo y congelamos las anclas.
+                const MIN_POS_JUMP = 0.001; // ~1 milímetro
+                const MIN_ROT_ANGLE = 0.01;  // ~0.5 grados
+                const MIN_SCALE_DIFF = 0.005; // ~0.5%
+                
+                if (this._ready) {
+                    let shouldUpdatePos = p.distanceTo(this._lockedP) > MIN_POS_JUMP;
+                    let shouldUpdateRot = q.angleTo(this._lockedQ) > MIN_ROT_ANGLE;
+                    let shouldUpdateScale = s.distanceTo(this._lockedS) > MIN_SCALE_DIFF;
+                    
+                    if (!shouldUpdatePos) p.copy(this._lockedP);
+                    else this._lockedP.copy(p);
+                    
+                    if (!shouldUpdateRot) q.copy(this._lockedQ);
+                    else this._lockedQ.copy(q);
+                    
+                    if (!shouldUpdateScale) s.copy(this._lockedS);
+                    else this._lockedS.copy(s);
+                } else {
+                    this._lockedP.copy(p);
+                    this._lockedQ.copy(q);
+                    this._lockedS.copy(s);
+                }
+
                 const self = this.el.object3D;
 
-                // Snap instantáneo al detectar por primera vez
                 if (!this._ready) {
                     this._pos.copy(p);
                     this._quat.copy(q);
@@ -243,16 +267,12 @@
                     return;
                 }
 
-                // Interpolación Desacoplada (Decoupled Kinematics)
-                // - La posición persigue agresivamente el video (no se sale del marco)
-                // - La rotación/escala filtran el ruido de profundidad (elimina temblor de capas interiores)
-                const fpsFactor = Math.min(delta || 16.67, 50) / 16.67; // Corrección para pantallas de 120hz
+                const fpsFactor = Math.min(delta || 16.67, 50) / 16.67; 
                 
                 this._pos.lerp(p, 1 - Math.pow(1 - this.data.posAlpha, fpsFactor));
                 this._quat.slerp(q, 1 - Math.pow(1 - this.data.rotAlpha, fpsFactor));
                 this._scale.lerp(s, 1 - Math.pow(1 - this.data.scaleAlpha, fpsFactor));
 
-                // Aplicar coordenadas
                 self.position.copy(this._pos);
                 self.quaternion.copy(this._quat);
                 self.scale.copy(this._scale);
@@ -262,7 +282,7 @@
 
     <!-- ====== AR SCENE ====== -->
     <a-scene
-        mindar-image="imageTargetSrc: ./assets/cuadro.mind; autoStart: false; uiLoading: no; uiScanning: no; filterMinCF: 0.1; filterBeta: 50; missTolerance: 10; warmupTolerance: 12;"
+        mindar-image="imageTargetSrc: ./assets/cuadro.mind; autoStart: false; uiLoading: no; uiScanning: no; filterMinCF: 0.001; filterBeta: 1000; missTolerance: 10; warmupTolerance: 12;"
         color-space="sRGB"
         renderer="colorManagement: true; physicallyCorrectLights: true;"
         vr-mode-ui="enabled: false"
