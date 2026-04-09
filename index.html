@@ -179,7 +179,7 @@
 
     <!-- ====== AR SCENE (Parallax 3D - Efecto Referencia) ====== -->
     <a-scene
-        mindar-image="imageTargetSrc: ./assets/cuadro.mind; autoStart: false; uiLoading: no; uiScanning: no; filterMinCF: 0.0001; filterBeta: 10;"
+        mindar-image="imageTargetSrc: ./assets/cuadro.mind; autoStart: false; uiLoading: no; uiScanning: no; filterMinCF: 0.0001; filterBeta: 0.001;"
         color-space="sRGB"
         renderer="colorManagement: true; physicallyCorrectLights: true;"
         vr-mode-ui="enabled: false"
@@ -201,53 +201,53 @@
 
         <a-entity mindar-image-target="targetIndex: 0" id="ar-group">
             <!--
-                EFECTO PARALLAX 3D PRO:
-                Distancias Z grandes para profundidad dramática visible.
-                Las capas flotan hacia ti creando un efecto diorama 3D real.
-                Al mover la cámara de lado, verás la separación entre capas.
+                EFECTO PARALLAX 3D EQUILIBRADO:
+                Z controlado (máximo 0.15) para tener buena profundidad
+                PERO garantizar que las capas no se salgan nunca del marco negro
+                del cuadro físico de la pared al verlas de lado. Toda capa respeta width="1".
             -->
 
             <!-- Capa 1: Base del cuadro (pegada al target, z=0) -->
             <a-image src="#layer1" position="0 0 0" width="1" height="1"
                 material="transparent: true; alphaTest: 0.05;"></a-image>
 
-            <!-- Capa 2: Fondo de flores (z=+0.06) -->
-            <a-image src="#layer2" position="0 0 0" width="1.05" height="1.05"
-                animation__pop="property: position; to: 0 0 0.06; dur: 800; easing: easeOutElastic; startEvents: animate-pop"
-                animation__float="property: position; to: 0 0.003 0.06; dur: 3000; easing: easeInOutSine; dir: alternate; loop: true; startEvents: animate-pop"
+            <!-- Capa 2: Fondo de flores (z=+0.02) -->
+            <a-image src="#layer2" position="0 0 0" width="1" height="1"
+                animation__pop="property: position; to: 0 0 0.02; dur: 800; easing: easeOutElastic; startEvents: animate-pop"
+                animation__float="property: position; to: 0 0.002 0.02; dur: 3000; easing: easeInOutSine; dir: alternate; loop: true; startEvents: animate-pop"
                 material="transparent: true; alphaTest: 0.05;"></a-image>
 
-            <!-- Capa 3: Cruz de fotos (z=+0.14) -->
+            <!-- Capa 3: Cruz de fotos (z=+0.04) -->
             <a-image src="#layer3" position="0 0 0" width="1" height="1"
-                animation__pop="property: position; to: 0 0 0.14; dur: 1000; easing: easeOutElastic; startEvents: animate-pop"
+                animation__pop="property: position; to: 0 0 0.04; dur: 1000; easing: easeOutElastic; startEvents: animate-pop"
                 material="transparent: true; alphaTest: 0.05;"></a-image>
 
-            <!-- Capa 4: Flores de la cruz (z=+0.22) -->
-            <a-image src="#layer4" position="0 0 0" width="1.08" height="1.08"
-                animation__pop="property: position; to: 0 0 0.22; dur: 1200; easing: easeOutElastic; startEvents: animate-pop"
-                animation__float="property: position; to: 0 -0.003 0.22; dur: 2500; easing: easeInOutSine; dir: alternate; loop: true; startEvents: animate-pop"
+            <!-- Capa 4: Flores de la cruz (z=+0.06) -->
+            <a-image src="#layer4" position="0 0 0" width="1" height="1"
+                animation__pop="property: position; to: 0 0 0.06; dur: 1200; easing: easeOutElastic; startEvents: animate-pop"
+                animation__float="property: position; to: 0 -0.002 0.06; dur: 2500; easing: easeInOutSine; dir: alternate; loop: true; startEvents: animate-pop"
                 material="transparent: true; alphaTest: 0.05;"></a-image>
 
-            <!-- Capa 5: Fotos esquinas (z=+0.30) -->
+            <!-- Capa 5: Fotos esquinas (z=+0.09) -->
             <a-image src="#layer5" position="0 0 0" width="1" height="1"
-                animation__pop="property: position; to: 0 0 0.30; dur: 1400; easing: easeOutElastic; startEvents: animate-pop"
+                animation__pop="property: position; to: 0 0 0.09; dur: 1400; easing: easeOutElastic; startEvents: animate-pop"
                 material="transparent: true; alphaTest: 0.05;"></a-image>
 
-            <!-- Capa 6: Flores esquinas (z=+0.38) -->
-            <a-image src="#layer6" position="0 0 0" width="1.1" height="1.1"
-                animation__pop="property: position; to: 0 0 0.38; dur: 1600; easing: easeOutElastic; startEvents: animate-pop"
-                animation__float="property: position; to: 0 0.004 0.38; dur: 2800; easing: easeInOutSine; dir: alternate; loop: true; startEvents: animate-pop"
+            <!-- Capa 6: Flores esquinas (z=+0.11) -->
+            <a-image src="#layer6" position="0 0 0" width="1" height="1"
+                animation__pop="property: position; to: 0 0 0.11; dur: 1600; easing: easeOutElastic; startEvents: animate-pop"
+                animation__float="property: position; to: 0 0.003 0.11; dur: 2800; easing: easeInOutSine; dir: alternate; loop: true; startEvents: animate-pop"
                 material="transparent: true; alphaTest: 0.05;"></a-image>
 
-            <!-- Capa 7: Foto centro (z=+0.46) -->
+            <!-- Capa 7: Foto centro (z=+0.13) -->
             <a-image src="#layer7" position="0 0 0" width="1" height="1"
-                animation__pop="property: position; to: 0 0 0.46; dur: 1800; easing: easeOutElastic; startEvents: animate-pop"
+                animation__pop="property: position; to: 0 0 0.13; dur: 1800; easing: easeOutElastic; startEvents: animate-pop"
                 material="transparent: true; alphaTest: 0.05;"></a-image>
 
-            <!-- Capa 8: Flores centro (z=+0.54) — la capa más cercana a ti -->
-            <a-image src="#layer8" position="0 0 0" width="1.12" height="1.12"
-                animation__pop="property: position; to: 0 0 0.54; dur: 2000; easing: easeOutElastic; startEvents: animate-pop"
-                animation__float="property: position; to: 0 -0.004 0.54; dur: 3200; easing: easeInOutSine; dir: alternate; loop: true; startEvents: animate-pop"
+            <!-- Capa 8: Flores centro (z=+0.15) — la capa más cercana a ti -->
+            <a-image src="#layer8" position="0 0 0" width="1" height="1"
+                animation__pop="property: position; to: 0 0 0.15; dur: 2000; easing: easeOutElastic; startEvents: animate-pop"
+                animation__float="property: position; to: 0 -0.003 0.15; dur: 3200; easing: easeInOutSine; dir: alternate; loop: true; startEvents: animate-pop"
                 material="transparent: true; alphaTest: 0.05;"></a-image>
 
         </a-entity>
