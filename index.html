@@ -177,22 +177,26 @@
         <source src="./assets/musica.mp3" type="audio/mpeg">
     </audio>
 
-    <!-- ====== ESTABILIZADOR AR PROFESIONAL v2 ====== -->
-    <!-- Dead Zone + Adaptive Smoothing + Buffer Adaptativo por Velocidad -->
+    <!-- ====== ESTABILIZADOR AR PROFESIONAL v3 — GOD MODE ====== -->
+    <!-- Doble filtrado (MindAR + nuestro) + Stillness Lock + Dead Zone + Buffer Adaptativo -->
     <script>
         AFRAME.registerComponent('smooth-follow', {
             schema: {
                 target: { type: 'selector' },
-                // Suavizado cuando la cámara está quieta (2% = roca sólida)
-                minSmoothing: { type: 'number', default: 0.02 },
-                // Suavizado cuando la cámara se mueve rápido (90% = casi instantáneo)
+                // 0.8% por frame cuando quieto — prácticamente inmóvil
+                minSmoothing: { type: 'number', default: 0.008 },
+                // 90% por frame en movimiento — sigue instantáneamente
                 maxSmoothing: { type: 'number', default: 0.9 },
-                // Velocidad que activa el modo responsivo 
+                // Umbral de velocidad para activar modo responsivo
                 speedThreshold: { type: 'number', default: 0.012 },
-                // Zona muerta: ignora micro-movimientos por ruido
-                deadZone: { type: 'number', default: 0.0006 },
-                // Buffer máximo de frames (se achica automáticamente en movimiento)
-                bufferSize: { type: 'number', default: 8 }
+                // Zona muerta amplia: ignora TODO micro-movimiento
+                deadZone: { type: 'number', default: 0.002 },
+                // Zona muerta para rotación (en radianes)
+                rotDeadZone: { type: 'number', default: 0.003 },
+                // Buffer máximo (se achica en movimiento)
+                bufferSize: { type: 'number', default: 12 },
+                // Frames quietos para activar FREEZE total
+                lockAfterFrames: { type: 'number', default: 8 }
             },
             init: function() {
                 this._smoothedPos = new THREE.Vector3();
@@ -202,6 +206,7 @@
                 this._quatBuffer = [];
                 this._scaleBuffer = [];
                 this._prevRawPos = new THREE.Vector3();
+                this._stillFrames = 0; // Contador de frames quietos para LOCK
                 this._ready = false;
                 this._visible = false;
             },
@@ -216,6 +221,7 @@
                         this.el.object3D.visible = false;
                         this._visible = false;
                         this._ready = false;
+                        this._stillFrames = 0;
                         this._posBuffer = [];
                         this._quatBuffer = [];
                         this._scaleBuffer = [];
@@ -223,40 +229,67 @@
                     return;
                 }
 
-                // Leer posición cruda
+                // Leer posición cruda del tracker
                 const rawPos = new THREE.Vector3();
                 const rawQuat = new THREE.Quaternion();
                 const rawScale = new THREE.Vector3();
                 trackerObj.updateWorldMatrix(true, false);
                 trackerObj.matrixWorld.decompose(rawPos, rawQuat, rawScale);
 
-                // === PASO 1: Calcular velocidad CRUDA (antes de buffer) ===
+                // === PASO 1: Velocidad cruda ===
                 const rawSpeed = this._ready ? rawPos.distanceTo(this._prevRawPos) : 0;
                 this._prevRawPos.copy(rawPos);
 
-                // === PASO 2: Calcular ratio de velocidad con curva sqrt ===
-                // sqrt hace que la transición quiet→rápido ocurra ANTES
+                // === PASO 2: Ratio de velocidad con curva sqrt ===
                 const speedRatio = Math.min(rawSpeed / this.data.speedThreshold, 1.0);
                 const curvedRatio = Math.sqrt(speedRatio);
 
-                // === PASO 3: Buffer ADAPTATIVO — se achica en movimiento rápido ===
-                // Quieto: buffer completo (8 frames de promediado = ultra estable)
-                // Moviendo: buffer de 2 (casi sin promediado = sin latencia)
+                // === PASO 3: STILLNESS LOCK ===
+                // Si la velocidad está dentro de la dead zone por N frames consecutivos,
+                // CONGELAR completamente — cero actualizaciones, cero micro-movimiento
+                if (rawSpeed < this.data.deadZone * 0.5) {
+                    this._stillFrames++;
+                } else {
+                    this._stillFrames = 0;
+                }
+
+                const isLocked = this._stillFrames > this.data.lockAfterFrames;
+
+                // Si está congelado Y ya listo, no actualizar NADA — absolute freeze
+                if (isLocked && this._ready) {
+                    // Solo mantener visible, no tocar posición/rotación
+                    if (!this._visible) {
+                        this.el.object3D.visible = true;
+                        this._visible = true;
+                    }
+                    // Seguir llenando buffer para cuando se desbloquee
+                    this._posBuffer.push(rawPos);
+                    this._quatBuffer.push(rawQuat);
+                    this._scaleBuffer.push(rawScale);
+                    while (this._posBuffer.length > this.data.bufferSize) {
+                        this._posBuffer.shift();
+                        this._quatBuffer.shift();
+                        this._scaleBuffer.shift();
+                    }
+                    return; // ← FREEZE: no toca absolutamente nada
+                }
+
+                // === PASO 4: Buffer ADAPTATIVO ===
+                // Quieto: 12 frames promediados | Moviendo rápido: 2 frames
                 const adaptiveBufSize = Math.max(2, Math.round(
-                    this.data.bufferSize * (1 - curvedRatio * 0.75)
+                    this.data.bufferSize * (1 - curvedRatio * 0.8)
                 ));
 
                 this._posBuffer.push(rawPos);
                 this._quatBuffer.push(rawQuat);
                 this._scaleBuffer.push(rawScale);
-                // Recortar al tamaño adaptativo
                 while (this._posBuffer.length > adaptiveBufSize) {
                     this._posBuffer.shift();
                     this._quatBuffer.shift();
                     this._scaleBuffer.shift();
                 }
 
-                // === PASO 4: Promedio del buffer ===
+                // === PASO 5: Promedio del buffer ===
                 const avgPos = new THREE.Vector3();
                 for (const p of this._posBuffer) avgPos.add(p);
                 avgPos.divideScalar(this._posBuffer.length);
@@ -286,25 +319,24 @@
                     return;
                 }
 
-                // === PASO 5: Smoothing adaptativo ===
-                // Quieto → 0.02 (roca)  |  Moviendo → 0.9 (instantáneo)
-                const f = this.data.minSmoothing + 
+                // === PASO 6: Smoothing adaptativo ===
+                const f = this.data.minSmoothing +
                           (this.data.maxSmoothing - this.data.minSmoothing) * curvedRatio;
 
-                // === PASO 6: Dead Zone — ignorar micro-movimientos ===
+                // === PASO 7: Dead Zone — rechazar micro-movimientos ===
                 const posDelta = avgPos.distanceTo(this._smoothedPos);
                 if (posDelta > this.data.deadZone) {
                     this._smoothedPos.lerp(avgPos, f);
                 }
 
                 const quatDelta = this._smoothedQuat.angleTo(avgQuat);
-                if (quatDelta > this.data.deadZone * 2) {
+                if (quatDelta > this.data.rotDeadZone) {
                     this._smoothedQuat.slerp(avgQuat, f);
                 }
 
                 this._smoothedScale.lerp(avgScale, f);
 
-                // === PASO 7: Aplicar al objeto visible ===
+                // === PASO 8: Aplicar al objeto visible ===
                 selfObj.position.copy(this._smoothedPos);
                 selfObj.quaternion.copy(this._smoothedQuat);
                 selfObj.scale.copy(this._smoothedScale);
@@ -319,7 +351,7 @@
 
     <!-- ====== AR SCENE ====== -->
     <a-scene
-        mindar-image="imageTargetSrc: ./assets/cuadro.mind; autoStart: false; uiLoading: no; uiScanning: no; filterMinCF: 0.0001; filterBeta: 1000; missTolerance: 8; warmupTolerance: 8;"
+        mindar-image="imageTargetSrc: ./assets/cuadro.mind; autoStart: false; uiLoading: no; uiScanning: no; filterMinCF: 0.0001; filterBeta: 100; missTolerance: 10; warmupTolerance: 12;"
         color-space="sRGB"
         renderer="colorManagement: true; physicallyCorrectLights: true;"
         vr-mode-ui="enabled: false"
@@ -342,7 +374,7 @@
 
         <!-- CONTENIDO VISIBLE: sigue al tracker con interpolación suave (SIN jitter) -->
         <a-entity id="ar-content" visible="false"
-            smooth-follow="target: #ar-tracker; minSmoothing: 0.02; maxSmoothing: 0.9; speedThreshold: 0.012; deadZone: 0.0006; bufferSize: 8;">
+            smooth-follow="target: #ar-tracker; minSmoothing: 0.008; maxSmoothing: 0.9; speedThreshold: 0.012; deadZone: 0.002; rotDeadZone: 0.003; bufferSize: 12; lockAfterFrames: 8;">
 
             <!-- BASE: Fondo de Flores denso (z=0) -->
             <a-image src="#layer2" position="0 0 0" width="1.0" height="1.0"
