@@ -303,6 +303,23 @@
     </a-scene>
 
     <script>
+        // === Forzar cámara principal 1x en lugar de ultra-wide 0.5x ===
+        // En Samsung S21 FE (y otros con múltiples cámaras), Chrome a veces
+        // elige la ultra-wide por defecto. Al pedir resolución alta, el navegador
+        // selecciona automáticamente la cámara principal que la soporta.
+        const _originalGetUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+        navigator.mediaDevices.getUserMedia = async function(constraints) {
+            if (constraints && constraints.video && typeof constraints.video === 'object') {
+                constraints.video.width = { ideal: 1920, min: 1280 };
+                constraints.video.height = { ideal: 1080, min: 720 };
+                // Forzar facingMode environment (cámara trasera)
+                if (!constraints.video.facingMode) {
+                    constraints.video.facingMode = { ideal: 'environment' };
+                }
+            }
+            return _originalGetUserMedia(constraints);
+        };
+
         // === State ===
         let musicPlaying = false;
         const landing = document.getElementById('landing');
