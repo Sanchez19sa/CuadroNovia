@@ -307,6 +307,20 @@
                     return;
                 }
 
+                // === MICRO-JITTER LOCK (ANTI-TEMBLOR EXTREMO EN MACRO) ===
+                // Cuando te acercas mucho al cuadro, un error de cámara de 1mm se magnifica en las capas flotantes.
+                // Hysteresis: Si tu mano está firme (gyro < 0.3) y la cámara reporta un movimiento de "ruido" minúsculo,
+                // MATA el ruido obligando a la lectura a ser idéntica al cuadro anterior. Congelado absoluto.
+                if (window._gyroAvailable && window._gyroSpeed < 0.3) {
+                    if (p.distanceTo(this._pos) < 0.015 && 
+                        q.angleTo(this._quat) < 0.05 && 
+                        s.distanceTo(this._scale) < 0.05) {
+                        p.copy(this._pos);
+                        q.copy(this._quat);
+                        s.copy(this._scale);
+                    }
+                }
+
                 // Velocidad del tracking
                 const speed = p.distanceTo(this._prevPos);
                 this._prevPos.copy(p);
