@@ -177,16 +177,81 @@
         <source src="./assets/musica.mp3" type="audio/mpeg">
     </audio>
 
+    <!-- ====== SMOOTH-FOLLOW COMPONENT (Patrón profesional anti-jitter) ====== -->
+    <script>
+        // Componente A-Frame que sigue suavemente al tracker usando lerp/slerp.
+        // Esto ELIMINA el temblor porque el contenido visible nunca recibe 
+        // los datos crudos del tracking - solo se interpola suavemente hacia ellos.
+        AFRAME.registerComponent('smooth-follow', {
+            schema: {
+                target: { type: 'selector' },
+                lerpFactor: { type: 'number', default: 0.15 }
+            },
+            init: function() {
+                this._targetPos = new THREE.Vector3();
+                this._targetQuat = new THREE.Quaternion();
+                this._targetScale = new THREE.Vector3(1, 1, 1);
+                this._ready = false;
+                this._visible = false;
+            },
+            tick: function() {
+                const tracker = this.data.target;
+                if (!tracker) return;
+
+                const trackerObj = tracker.object3D;
+
+                // Si el tracker no es visible (target lost), ocultar contenido
+                if (!trackerObj.visible) {
+                    if (this._visible) {
+                        this.el.object3D.visible = false;
+                        this._visible = false;
+                        this._ready = false;
+                    }
+                    return;
+                }
+
+                // Descomponer la matriz mundial del tracker
+                trackerObj.updateWorldMatrix(true, false);
+                trackerObj.matrixWorld.decompose(
+                    this._targetPos, this._targetQuat, this._targetScale
+                );
+
+                const selfObj = this.el.object3D;
+
+                // Primera detección: saltar directamente a la posición (sin interpolación)
+                if (!this._ready) {
+                    selfObj.position.copy(this._targetPos);
+                    selfObj.quaternion.copy(this._targetQuat);
+                    selfObj.scale.copy(this._targetScale);
+                    selfObj.visible = true;
+                    this._visible = true;
+                    this._ready = true;
+                    return;
+                }
+
+                // Interpolación suave: el contenido "persigue" al tracker sin temblor
+                const f = this.data.lerpFactor;
+                selfObj.position.lerp(this._targetPos, f);
+                selfObj.quaternion.slerp(this._targetQuat, f);
+                selfObj.scale.lerp(this._targetScale, f);
+
+                if (!this._visible) {
+                    selfObj.visible = true;
+                    this._visible = true;
+                }
+            }
+        });
+    </script>
+
     <!-- ====== AR SCENE ====== -->
     <a-scene
-        mindar-image="imageTargetSrc: ./assets/cuadro.mind; autoStart: false; uiLoading: no; uiScanning: no; filterMinCF: 0.0001; filterBeta: 1000; missTolerance: 5; warmupTolerance: 5;"
+        mindar-image="imageTargetSrc: ./assets/cuadro.mind; autoStart: false; uiLoading: no; uiScanning: no; filterMinCF: 0.0001; filterBeta: 1000; missTolerance: 8; warmupTolerance: 8;"
         color-space="sRGB"
         renderer="colorManagement: true; physicallyCorrectLights: true;"
         vr-mode-ui="enabled: false"
         device-orientation-permission-ui="enabled: false">
 
         <a-assets>
-            <img id="layer1" src="./assets/layers/layer1_all_photos.png" crossorigin="anonymous">
             <img id="layer2" src="./assets/layers/layer2_flower_bg.png" crossorigin="anonymous">
             <img id="layer3" src="./assets/layers/layer3_cross_photos.png" crossorigin="anonymous">
             <img id="layer4" src="./assets/layers/layer4_cross_flowers.png" crossorigin="anonymous">
@@ -198,14 +263,18 @@
 
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-        <a-entity mindar-image-target="targetIndex: 0" id="ar-group">
+        <!-- TRACKER INVISIBLE: recibe los datos crudos de MindAR (con su jitter natural) -->
+        <a-entity mindar-image-target="targetIndex: 0" id="ar-tracker"></a-entity>
+
+        <!-- CONTENIDO VISIBLE: sigue al tracker con interpolación suave (SIN jitter) -->
+        <a-entity id="ar-content" visible="false"
+            smooth-follow="target: #ar-tracker; lerpFactor: 0.12;">
 
             <!-- BASE: Fondo de Flores denso (z=0) -->
             <a-image src="#layer2" position="0 0 0" width="1.0" height="1.0"
-                material="transparent: true; alphaTest: 0.05;"
-                animation__fade="property: material.opacity; from: 0; to: 1; dur: 800; easing: easeOutQuad; startEvents: animate-pop"></a-image>
+                material="transparent: true; alphaTest: 0.05;"></a-image>
 
-            <!-- TIER 1: Fotos en Cruz flotan BASTANTE (z=+0.15) -->
+            <!-- TIER 1: Fotos en Cruz (z=+0.15) -->
             <a-image src="#layer3" position="0 0 0.15" width="1.0" height="1.0"
                 material="transparent: true; alphaTest: 0.05;"></a-image>
 
@@ -213,7 +282,7 @@
             <a-image src="#layer4" position="0 0 0.20" width="1.0" height="1.0"
                 material="transparent: true; alphaTest: 0.05;"></a-image>
 
-            <!-- TIER 2: Fotos Esquinas flotan MAS LEJOS (z=+0.35) -->
+            <!-- TIER 2: Fotos Esquinas (z=+0.35) -->
             <a-image src="#layer5" position="0 0 0.35" width="1.0" height="1.0"
                 material="transparent: true; alphaTest: 0.05;"></a-image>
 
@@ -221,7 +290,7 @@
             <a-image src="#layer6" position="0 0 0.40" width="1.0" height="1.0"
                 material="transparent: true; alphaTest: 0.05;"></a-image>
 
-            <!-- TIER 3: Foto Central es la que mas vuela hacia ti (z=+0.55) -->
+            <!-- TIER 3: Foto Central (z=+0.55) -->
             <a-image src="#layer7" position="0 0 0.55" width="1.0" height="1.0"
                 material="transparent: true; alphaTest: 0.05;"></a-image>
 
@@ -230,6 +299,7 @@
                 material="transparent: true; alphaTest: 0.05;"></a-image>
 
         </a-entity>
+
     </a-scene>
 
     <script>
@@ -241,7 +311,7 @@
         const musicIco = document.getElementById('music-ico');
         const bgm = document.getElementById('bgm');
         const scene = document.querySelector('a-scene');
-        const target = document.querySelector('[mindar-image-target]');
+        const tracker = document.getElementById('ar-tracker');
 
         // === Particles (Mantener efecto en landing) ===
         (function() {
@@ -284,20 +354,13 @@
         });
 
         // === Target found/lost ===
-        target.addEventListener('targetFound', () => {
+        tracker.addEventListener('targetFound', () => {
             scanning.classList.add('hidden');
             musicBtn.classList.remove('hidden');
-            
-            // Disparar las animaciones 3D
-            const entities = document.querySelectorAll('a-image');
-            entities.forEach(el => {
-                el.emit('animate-pop');
-            });
-
             bgm.play().then(() => { musicPlaying = true; musicIco.textContent = '🎵'; }).catch(() => {});
         });
 
-        target.addEventListener('targetLost', () => {
+        tracker.addEventListener('targetLost', () => {
             scanning.classList.remove('hidden');
             bgm.pause(); musicPlaying = false; musicIco.textContent = '🔇';
         });
