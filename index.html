@@ -376,33 +376,53 @@
         <a-entity id="ar-content" visible="false"
             smooth-follow="target: #ar-tracker; minSmoothing: 0.008; maxSmoothing: 0.9; speedThreshold: 0.012; deadZone: 0.002; rotDeadZone: 0.003; bufferSize: 12; lockAfterFrames: 8;">
 
-            <!-- BASE: Fondo de Flores denso (z=0) -->
+            <!-- BASE: Fondo de Flores (z=0) — aparece primero -->
             <a-image src="#layer2" position="0 0 0" width="1.0" height="1.0"
-                material="transparent: true; alphaTest: 0.05;"></a-image>
+                material="transparent: true; alphaTest: 0.05; opacity: 0;"
+                animation__fadein="property: material.opacity; from: 0; to: 1; dur: 600; easing: easeOutQuad; startEvents: ar-pop;"
+                class="ar-layer"></a-image>
 
-            <!-- TIER 1: Fotos en Cruz (z=+0.15) -->
-            <a-image src="#layer3" position="0 0 0.15" width="1.0" height="1.0"
-                material="transparent: true; alphaTest: 0.05;"></a-image>
+            <!-- TIER 1: Fotos en Cruz — sale de z=0 a z=0.15 -->
+            <a-image src="#layer3" position="0 0 0" width="1.0" height="1.0"
+                material="transparent: true; alphaTest: 0.05; opacity: 0;"
+                animation__fadein="property: material.opacity; from: 0; to: 1; dur: 500; delay: 200; easing: easeOutQuad; startEvents: ar-pop;"
+                animation__zout="property: position; from: 0 0 0; to: 0 0 0.15; dur: 800; delay: 200; easing: easeOutBack; startEvents: ar-pop;"
+                class="ar-layer"></a-image>
 
-            <!-- Flores de la cruz (z=+0.20) -->
-            <a-image src="#layer4" position="0 0 0.20" width="1.0" height="1.0"
-                material="transparent: true; alphaTest: 0.05;"></a-image>
+            <!-- Flores de la cruz — sale a z=0.20 -->
+            <a-image src="#layer4" position="0 0 0" width="1.0" height="1.0"
+                material="transparent: true; alphaTest: 0.05; opacity: 0;"
+                animation__fadein="property: material.opacity; from: 0; to: 1; dur: 500; delay: 350; easing: easeOutQuad; startEvents: ar-pop;"
+                animation__zout="property: position; from: 0 0 0; to: 0 0 0.20; dur: 800; delay: 350; easing: easeOutBack; startEvents: ar-pop;"
+                class="ar-layer"></a-image>
 
-            <!-- TIER 2: Fotos Esquinas (z=+0.35) -->
-            <a-image src="#layer5" position="0 0 0.35" width="1.0" height="1.0"
-                material="transparent: true; alphaTest: 0.05;"></a-image>
+            <!-- TIER 2: Fotos Esquinas — sale a z=0.35 -->
+            <a-image src="#layer5" position="0 0 0" width="1.0" height="1.0"
+                material="transparent: true; alphaTest: 0.05; opacity: 0;"
+                animation__fadein="property: material.opacity; from: 0; to: 1; dur: 500; delay: 500; easing: easeOutQuad; startEvents: ar-pop;"
+                animation__zout="property: position; from: 0 0 0; to: 0 0 0.35; dur: 900; delay: 500; easing: easeOutBack; startEvents: ar-pop;"
+                class="ar-layer"></a-image>
 
-            <!-- Flores esquinas (z=+0.40) -->
-            <a-image src="#layer6" position="0 0 0.40" width="1.0" height="1.0"
-                material="transparent: true; alphaTest: 0.05;"></a-image>
+            <!-- Flores esquinas — sale a z=0.40 -->
+            <a-image src="#layer6" position="0 0 0" width="1.0" height="1.0"
+                material="transparent: true; alphaTest: 0.05; opacity: 0;"
+                animation__fadein="property: material.opacity; from: 0; to: 1; dur: 500; delay: 650; easing: easeOutQuad; startEvents: ar-pop;"
+                animation__zout="property: position; from: 0 0 0; to: 0 0 0.40; dur: 900; delay: 650; easing: easeOutBack; startEvents: ar-pop;"
+                class="ar-layer"></a-image>
 
-            <!-- TIER 3: Foto Central (z=+0.55) -->
-            <a-image src="#layer7" position="0 0 0.55" width="1.0" height="1.0"
-                material="transparent: true; alphaTest: 0.05;"></a-image>
+            <!-- TIER 3: Foto Central — sale a z=0.55 (la que más flota) -->
+            <a-image src="#layer7" position="0 0 0" width="1.0" height="1.0"
+                material="transparent: true; alphaTest: 0.05; opacity: 0;"
+                animation__fadein="property: material.opacity; from: 0; to: 1; dur: 500; delay: 800; easing: easeOutQuad; startEvents: ar-pop;"
+                animation__zout="property: position; from: 0 0 0; to: 0 0 0.55; dur: 1000; delay: 800; easing: easeOutBack; startEvents: ar-pop;"
+                class="ar-layer"></a-image>
 
-            <!-- Flores centro (z=+0.60) -->
-            <a-image src="#layer8" position="0 0 0.60" width="1.0" height="1.0"
-                material="transparent: true; alphaTest: 0.05;"></a-image>
+            <!-- Flores centro — sale a z=0.60 (la más cercana a ti) -->
+            <a-image src="#layer8" position="0 0 0" width="1.0" height="1.0"
+                material="transparent: true; alphaTest: 0.05; opacity: 0;"
+                animation__fadein="property: material.opacity; from: 0; to: 1; dur: 500; delay: 950; easing: easeOutQuad; startEvents: ar-pop;"
+                animation__zout="property: position; from: 0 0 0; to: 0 0 0.60; dur: 1000; delay: 950; easing: easeOutBack; startEvents: ar-pop;"
+                class="ar-layer"></a-image>
 
         </a-entity>
 
@@ -521,9 +541,21 @@
         });
 
         // === Target found/lost ===
+        let _animationFired = false;
         tracker.addEventListener('targetFound', () => {
             scanning.classList.add('hidden');
             musicBtn.classList.remove('hidden');
+
+            // Disparar animación cinematográfica de entrada (solo la primera vez)
+            if (!_animationFired) {
+                setTimeout(() => {
+                    document.querySelectorAll('.ar-layer').forEach(el => {
+                        el.emit('ar-pop');
+                    });
+                }, 300); // Esperar a que el tracker se estabilice
+                _animationFired = true;
+            }
+
             bgm.play().then(() => { musicPlaying = true; musicIco.textContent = '🎵'; }).catch(() => {});
         });
 
