@@ -177,64 +177,83 @@
         <source src="./assets/musica.mp3" type="audio/mpeg">
     </audio>
 
-    <!-- ====== AR SCENE (Parallax 3D Real) ====== -->
+    <!-- ====== AR SCENE (Parallax 3D - Efecto Referencia) ====== -->
     <a-scene
-        mindar-image="imageTargetSrc: ./assets/cuadro.mind; autoStart: false; uiLoading: no; uiScanning: no; filterMinCF: 0.0001; filterBeta: 0.001;"
+        mindar-image="imageTargetSrc: ./assets/cuadro.mind; autoStart: false; uiLoading: no; uiScanning: no; filterMinCF: 0.0001; filterBeta: 0.01;"
         color-space="sRGB"
         renderer="colorManagement: true; physicallyCorrectLights: true;"
         vr-mode-ui="enabled: false"
         device-orientation-permission-ui="enabled: false"
     >
-        <!-- Cargamos las capas: Flores grandes únicas, fondo lleno, y fotos estables -->
+        <!-- 8 capas exactas como la referencia -->
         <a-assets>
-            <img id="layer1" src="./assets/layers/layer1_bg_floral.png" crossorigin="anonymous">
+            <img id="layer1" src="./assets/layers/layer1_all_photos.png" crossorigin="anonymous">
+            <img id="layer2" src="./assets/layers/layer2_flower_bg.png" crossorigin="anonymous">
             <img id="layer3" src="./assets/layers/layer3_cross_photos.png" crossorigin="anonymous">
             <img id="layer4" src="./assets/layers/layer4_cross_flowers.png" crossorigin="anonymous">
             <img id="layer5" src="./assets/layers/layer5_corner_photos.png" crossorigin="anonymous">
             <img id="layer6" src="./assets/layers/layer6_corner_flowers.png" crossorigin="anonymous">
             <img id="layer7" src="./assets/layers/layer7_center_photo.png" crossorigin="anonymous">
             <img id="layer8" src="./assets/layers/layer8_center_flowers.png" crossorigin="anonymous">
-            <img id="text-amo" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA+gAAACMCAYAAACZl8L0AAAAAXNSR0IArs4c6QAACQJJREFUeF7t18ERACAMAkD279wX7GAl8nIziG9m1nt2gAABAgQIECBAgAABAgQIPAk8B/TngiBAgAABAgQIECBAgAABAl+Cg/oHIECAAAECBAgQIECAAAECQYKDPgEEAQIECBAgQIAAAQIECBAcHNA/AAECBAgQIECAAAECBAgQCBIc9AkgCBAgQIAAAQIECBAgQIDg4ID+AQgQIECAAAECBAgQIECAQJDgoE8AQYAAAQIECBAgQIAAAQIEBwf0D0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIfBQf0A0CAAAECBAgQIECAAAECBIYvBAkQIECAAAECBAgQIAAAQIPAZZ2AA63M7zHMAAAAASUVORK5CYII=">
         </a-assets>
 
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
         <a-entity mindar-image-target="targetIndex: 0" id="ar-group">
-            <!-- 
-                Efecto Parallax Frontal Estable:
-                El Fondo floral oculta las fotos físicas, las capas flotan 
-                ligeramente sin demasiada Z para evitar vibraciones angulares
+            <!--
+                ESTRUCTURA EXACTA DE LA REFERENCIA:
+                Capa 1: Todas las 9 fotos (base, pegada al cuadro real)
+                Capa 2: Fondo denso de flores 
+                Capa 3: Cruz de fotos (4 fotos centrales)
+                Capa 4: Flores decorando la cruz
+                Capa 5: Fotos de las esquinas
+                Capa 6: Flores decorando las esquinas
+                Capa 7: Foto del centro
+                Capa 8: Flores decorando el centro
+                
+                Z negativo = profundidad hacia la cámara
+                Distancias MUY pequeñas para que no tiemble
             -->
-            
-            <a-image id="img-layer1" src="#layer1" position="0 0 0.00" width="1.0" height="1.0"></a-image>
 
-            <a-image id="img-layer3" src="#layer3" position="0 0 0" width="1" height="1"
-                animation__pop="property: position; to: 0 0 0.03; dur: 1500; easing: easeOutElastic; startEvents: animate-pop"
-                animation__rot="property: rotation; to: 0 0 1.5; dur: 1800; easing: easeOutQuad; startEvents: animate-pop"></a-image>
+            <!-- Capa 1: Base del cuadro (pegada, z=0) -->
+            <a-image src="#layer1" position="0 0 0" width="1" height="1"
+                material="transparent: true; alphaTest: 0.05;"></a-image>
 
-            <a-image id="img-layer4" src="#layer4" position="0 0 0" width="1" height="1"
-                animation__pop="property: position; to: 0 0 0.05; dur: 1700; easing: easeOutElastic; startEvents: animate-pop"></a-image>
+            <!-- Capa 2: Fondo de flores (z=-0.01) -->
+            <a-image src="#layer2" position="0 0 -0.01" width="1" height="1"
+                animation__pop="property: position; to: 0 0 -0.01; dur: 800; easing: easeOutQuad; startEvents: animate-pop"
+                material="transparent: true; alphaTest: 0.05;"></a-image>
 
-            <a-image id="img-layer5" src="#layer5" position="0 0 0" width="1" height="1"
-                animation__pop="property: position; to: 0 0 0.07; dur: 1900; easing: easeOutElastic; startEvents: animate-pop"
-                animation__rot="property: rotation; to: 0 0 -2; dur: 2000; easing: easeOutQuad; startEvents: animate-pop"></a-image>
+            <!-- Capa 3: Cruz de fotos (z=-0.02) -->
+            <a-image src="#layer3" position="0 0 0" width="1" height="1"
+                animation__pop="property: position; to: 0 0 -0.025; dur: 1000; easing: easeOutQuad; startEvents: animate-pop"
+                material="transparent: true; alphaTest: 0.05;"></a-image>
 
-            <a-image id="img-layer6" src="#layer6" position="0 0 0" width="1" height="1"
-                animation__pop="property: position; to: 0 0 0.09; dur: 2100; easing: easeOutElastic; startEvents: animate-pop"></a-image>
+            <!-- Capa 4: Flores de la cruz (z=-0.035) -->
+            <a-image src="#layer4" position="0 0 0" width="1" height="1"
+                animation__pop="property: position; to: 0 0 -0.035; dur: 1200; easing: easeOutQuad; startEvents: animate-pop"
+                material="transparent: true; alphaTest: 0.05;"></a-image>
 
-            <a-image id="img-layer7" src="#layer7" position="0 0 0" width="1" height="1"
-                animation__pop="property: position; to: 0 0 0.11; dur: 2300; easing: easeOutElastic; startEvents: animate-pop"
-                animation__rot="property: rotation; to: 0 0 2; dur: 2200; easing: easeOutQuad; startEvents: animate-pop"></a-image>
+            <!-- Capa 5: Fotos esquinas (z=-0.05) -->
+            <a-image src="#layer5" position="0 0 0" width="1" height="1"
+                animation__pop="property: position; to: 0 0 -0.05; dur: 1400; easing: easeOutQuad; startEvents: animate-pop"
+                material="transparent: true; alphaTest: 0.05;"></a-image>
 
-            <a-image id="img-layer8" src="#layer8" position="0 0 0" width="1" height="1"
-                animation__pop="property: position; to: 0 0 0.13; dur: 2500; easing: easeOutElastic; startEvents: animate-pop"></a-image>
+            <!-- Capa 6: Flores esquinas (z=-0.06) -->
+            <a-image src="#layer6" position="0 0 0" width="1" height="1"
+                animation__pop="property: position; to: 0 0 -0.065; dur: 1600; easing: easeOutQuad; startEvents: animate-pop"
+                material="transparent: true; alphaTest: 0.05;"></a-image>
 
-            <!-- Texto 3D Te Amo -->
-            <a-entity id="texto-teamo" position="0 -0.4 0" 
-                text="value: Te amo mi vida; font: https://cdn.aframe.io/fonts/mozillavr.fnt; color: #ff6b9d; align: center; width: 1.5;"
-                animation__pop="property: position; to: 0 -0.4 0.15; dur: 2800; easing: easeOutElastic; startEvents: animate-pop"
-                animation__float="property: position; to: 0 -0.38 0.15; dur: 2000; easing: easeInOutSine; dir: alternate; loop: true; startEvents: animate-pop">
-            </a-entity>
+            <!-- Capa 7: Foto centro (z=-0.08) -->
+            <a-image src="#layer7" position="0 0 0" width="1" height="1"
+                animation__pop="property: position; to: 0 0 -0.08; dur: 1800; easing: easeOutQuad; startEvents: animate-pop"
+                material="transparent: true; alphaTest: 0.05;"></a-image>
+
+            <!-- Capa 8: Flores centro (z=-0.095) -->
+            <a-image src="#layer8" position="0 0 0" width="1" height="1"
+                animation__pop="property: position; to: 0 0 -0.095; dur: 2000; easing: easeOutQuad; startEvents: animate-pop"
+                material="transparent: true; alphaTest: 0.05;"></a-image>
+
         </a-entity>
     </a-scene>
 
