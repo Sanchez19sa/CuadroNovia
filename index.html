@@ -303,18 +303,58 @@
     </a-scene>
 
     <script>
-        // === Forzar cámara principal 1x en lugar de ultra-wide 0.5x ===
-        // En Samsung S21 FE (y otros con múltiples cámaras), Chrome a veces
-        // elige la ultra-wide por defecto. Al pedir resolución alta, el navegador
-        // selecciona automáticamente la cámara principal que la soporta.
+        // === Forzar cámara principal 1x (la del medio) en Samsung S21 FE ===
+        // El S21 FE tiene 3 cámaras traseras. Chrome por defecto elige la primera
+        // (ultra-wide 0.5x). Necesitamos seleccionar la SEGUNDA (main 1x) por su deviceId.
+        let _mainCameraId = null;
         const _originalGetUserMedia = navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+
+        // Detectar la cámara del medio ANTES de que MindAR la pida
+        async function detectMainCamera() {
+            try {
+                // Necesitamos un stream temporal para obtener permisos y labels
+                const tempStream = await _originalGetUserMedia({ video: { facingMode: 'environment' } });
+                tempStream.getTracks().forEach(t => t.stop()); // Cerrar inmediatamente
+
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const rearCams = devices.filter(d => 
+                    d.kind === 'videoinput' && 
+                    (d.label.toLowerCase().includes('back') || 
+                     d.label.toLowerCase().includes('rear') || 
+                     d.label.toLowerCase().includes('trasera') ||
+                     d.label.toLowerCase().includes('environment') ||
+                     d.label.includes('0'))
+                );
+
+                console.log('Cámaras traseras detectadas:', rearCams.map(c => c.label));
+
+                // Si hay múltiples cámaras traseras, la segunda suele ser la principal 1x
+                if (rearCams.length >= 2) {
+                    _mainCameraId = rearCams[1].deviceId;
+                    console.log('Cámara 1x seleccionada:', rearCams[1].label);
+                } else {
+                    // Fallback: buscar entre TODAS las cámaras de video la segunda
+                    const allCams = devices.filter(d => d.kind === 'videoinput');
+                    if (allCams.length >= 2) {
+                        _mainCameraId = allCams[1].deviceId;
+                        console.log('Cámara seleccionada (fallback):', allCams[1].label);
+                    }
+                }
+            } catch(e) {
+                console.warn('No se pudo detectar cámara principal:', e);
+            }
+        }
+
+        // Interceptar getUserMedia para forzar la cámara correcta
         navigator.mediaDevices.getUserMedia = async function(constraints) {
-            if (constraints && constraints.video && typeof constraints.video === 'object') {
-                constraints.video.width = { ideal: 1920, min: 1280 };
-                constraints.video.height = { ideal: 1080, min: 720 };
-                // Forzar facingMode environment (cámara trasera)
-                if (!constraints.video.facingMode) {
-                    constraints.video.facingMode = { ideal: 'environment' };
+            if (constraints && constraints.video && _mainCameraId) {
+                // Forzar deviceId de la cámara del medio (1x)
+                if (typeof constraints.video === 'object') {
+                    constraints.video.deviceId = { exact: _mainCameraId };
+                    // Quitar facingMode porque deviceId tiene prioridad
+                    delete constraints.video.facingMode;
+                } else {
+                    constraints.video = { deviceId: { exact: _mainCameraId } };
                 }
             }
             return _originalGetUserMedia(constraints);
@@ -348,8 +388,12 @@
         // === Start AR ===
         document.getElementById('btn-start').addEventListener('click', async function() {
             this.disabled = true;
-            this.innerHTML = '<span>Iniciando cámara...</span>';
+            this.innerHTML = '<span>Detectando cámara 1x...</span>';
             try { bgm.load(); } catch(e) {}
+
+            // Detectar la cámara principal 1x ANTES de iniciar MindAR
+            await detectMainCamera();
+            this.innerHTML = '<span>Iniciando cámara...</span>';
 
             scene.addEventListener('arReady', () => {
                 landing.classList.add('fade-out');
