@@ -182,7 +182,7 @@
     <!-- Si el giroscopio dice "quieto" pero MindAR mueve → es RUIDO, se ignora casi todo -->
     <script>
         // === SENSOR FUSION: Detectar movimiento REAL con giroscopio ===
-        // El giroscopio del celular es 100x más preciso que el tracking por cámara
+        // Funciona en: Samsung S21 FE (Android), iPhone 12 Pro Max (iOS), cualquier smartphone
         window._gyroSpeed = 0;
         window._gyroAvailable = false;
         let _prevGyroA = null, _prevGyroB = null, _prevGyroG = null;
@@ -195,7 +195,6 @@
                 const da = Math.abs(e.alpha - _prevGyroA);
                 const db = Math.abs(e.beta - _prevGyroB);
                 const dg = Math.abs(e.gamma - _prevGyroG);
-                // Compensar wraparound de alpha (0-360)
                 const speed = Math.min(da, 360 - da) + db + dg;
                 _gyroSamples.push(speed);
                 if (_gyroSamples.length > GYRO_SAMPLES) _gyroSamples.shift();
@@ -205,7 +204,29 @@
             _prevGyroB = e.beta;
             _prevGyroG = e.gamma;
         }
-        window.addEventListener('deviceorientation', handleOrientation);
+
+        // Inicializar giroscopio (con permiso de iOS si es necesario)
+        async function initGyroscope() {
+            try {
+                // iOS 13+ requiere permiso explícito para DeviceOrientation
+                if (typeof DeviceOrientationEvent !== 'undefined' &&
+                    typeof DeviceOrientationEvent.requestPermission === 'function') {
+                    const permission = await DeviceOrientationEvent.requestPermission();
+                    if (permission === 'granted') {
+                        window.addEventListener('deviceorientation', handleOrientation);
+                        console.log('Giroscopio iOS activado ✅');
+                    } else {
+                        console.warn('Permiso de giroscopio denegado en iOS');
+                    }
+                } else {
+                    // Android y otros: no necesita permiso
+                    window.addEventListener('deviceorientation', handleOrientation);
+                    console.log('Giroscopio activado ✅');
+                }
+            } catch(e) {
+                console.warn('Giroscopio no disponible:', e);
+            }
+        }
 
         // === COMPONENTE SMOOTH-FOLLOW CON SENSOR FUSION ===
         AFRAME.registerComponent('smooth-follow', {
@@ -485,8 +506,9 @@
             this.innerHTML = '<span>Detectando cámara 1x...</span>';
             try { bgm.load(); } catch(e) {}
 
-            // Detectar la cámara principal 1x ANTES de iniciar MindAR
+            // Detectar cámara 1x Y activar giroscopio
             await detectMainCamera();
+            await initGyroscope();
             this.innerHTML = '<span>Iniciando cámara...</span>';
 
             scene.addEventListener('arReady', () => {
