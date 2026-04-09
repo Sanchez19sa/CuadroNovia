@@ -378,53 +378,81 @@
         <a-entity id="ar-content" visible="false"
             smooth-follow="target: #ar-tracker; gyroStillAlpha: 0.0001; minAlpha: 0.003; maxAlpha: 0.7; speedSensitivity: 35; speedFrames: 8; gyroStillThreshold: 0.4; rotDamping: 0.1;">
 
-            <!-- BASE: Fondo de Flores (z=0) — aparece primero -->
-            <a-image src="#layer2" position="0 0 0" width="1.0" height="1.0"
-                material="transparent: true; alphaTest: 0.05; opacity: 0;"
-                animation__fadein="property: material.opacity; from: 0; to: 1; dur: 600; easing: easeOutQuad; startEvents: ar-pop;"
-                class="ar-layer"></a-image>
+            <!-- BASE: Fondo de Flores (Permanece estático y al fondo) -->
+            <a-entity class="ar-animator">
+                <a-image src="#layer2" position="0 0 0" width="1.0" height="1.0"
+                    material="transparent: true; alphaTest: 0.05; opacity: 0;"
+                    animation__fade="property: material.opacity; from: 0; to: 1; dur: 800; easing: easeOutQuad; startEvents: ar-pop"></a-image>
+            </a-entity>
 
-            <!-- TIER 1: Fotos en Cruz — sale de z=0 a z=0.15 -->
-            <a-image src="#layer3" position="0 0 0" width="1.0" height="1.0"
-                material="transparent: true; alphaTest: 0.05; opacity: 0;"
-                animation__fadein="property: material.opacity; from: 0; to: 1; dur: 500; delay: 200; easing: easeOutQuad; startEvents: ar-pop;"
-                animation__zout="property: position; from: 0 0 0; to: 0 0 0.15; dur: 800; delay: 200; easing: easeOutBack; startEvents: ar-pop;"
-                class="ar-layer"></a-image>
+            <!-- TIER 1: Fotos en Cruz (z=+0.20) -->
+            <a-entity position="0 0 0" class="ar-animator"
+                animation__pop="property: position; from: 0 0 0; to: 0 0 0.20; dur: 1500; delay: 200; easing: easeOutElastic; startEvents: ar-pop">
+                
+                <!-- Sombra para dar percepción de 3D real -->
+                <a-image src="#layer3" position="0.02 -0.02 -0.05" width="1.0" height="1.0" material="transparent: true; opacity: 0; color: #000000;"
+                    animation__fade="property: material.opacity; from: 0; to: 0.4; dur: 800; delay: 500; startEvents: ar-pop"
+                    animation__hover="property: position; to: 0.02 -0.03 -0.05; dir: alternate; dur: 2500; loop: true; easing: easeInOutSine"></a-image>
+                    
+                <!-- Imagen real flotando -->
+                <a-image src="#layer3" position="0 0 0" width="1.0" height="1.0" material="transparent: true; alphaTest: 0.05; opacity: 0;"
+                    animation__fade="property: material.opacity; from: 0; to: 1; dur: 800; delay: 200; startEvents: ar-pop"
+                    animation__hover="property: position; to: 0 0.015 0; dir: alternate; dur: 2500; loop: true; easing: easeInOutSine"></a-image>
+            </a-entity>
 
-            <!-- Flores de la cruz — sale a z=0.20 -->
-            <a-image src="#layer4" position="0 0 0" width="1.0" height="1.0"
-                material="transparent: true; alphaTest: 0.05; opacity: 0;"
-                animation__fadein="property: material.opacity; from: 0; to: 1; dur: 500; delay: 350; easing: easeOutQuad; startEvents: ar-pop;"
-                animation__zout="property: position; from: 0 0 0; to: 0 0 0.20; dur: 800; delay: 350; easing: easeOutBack; startEvents: ar-pop;"
-                class="ar-layer"></a-image>
+            <!-- Flores de la cruz (z=+0.30) -->
+            <a-entity position="0 0 0" class="ar-animator"
+                animation__pop="property: position; from: 0 0 0; to: 0 0 0.30; dur: 1500; delay: 350; easing: easeOutElastic; startEvents: ar-pop">
+                <a-image src="#layer4" position="0 0 0" width="1.0" height="1.0" material="transparent: true; alphaTest: 0.05; opacity: 0;"
+                    animation__fade="property: material.opacity; from: 0; to: 1; dur: 800; delay: 350; startEvents: ar-pop"
+                    animation__hover="property: position; to: 0 0.02 0; dir: alternate; dur: 2300; loop: true; easing: easeInOutSine"></a-image>
+            </a-entity>
 
-            <!-- TIER 2: Fotos Esquinas — sale a z=0.35 -->
-            <a-image src="#layer5" position="0 0 0" width="1.0" height="1.0"
-                material="transparent: true; alphaTest: 0.05; opacity: 0;"
-                animation__fadein="property: material.opacity; from: 0; to: 1; dur: 500; delay: 500; easing: easeOutQuad; startEvents: ar-pop;"
-                animation__zout="property: position; from: 0 0 0; to: 0 0 0.35; dur: 900; delay: 500; easing: easeOutBack; startEvents: ar-pop;"
-                class="ar-layer"></a-image>
+            <!-- TIER 2: Fotos Esquinas (z=+0.50) -->
+            <a-entity position="0 0 0" class="ar-animator"
+                animation__pop="property: position; from: 0 0 0; to: 0 0 0.50; dur: 1500; delay: 500; easing: easeOutElastic; startEvents: ar-pop">
+                
+                <!-- Sombra -->
+                <a-image src="#layer5" position="0.04 -0.04 -0.1" width="1.0" height="1.0" material="transparent: true; opacity: 0; color: #000000;"
+                    animation__fade="property: material.opacity; from: 0; to: 0.3; dur: 800; delay: 800; startEvents: ar-pop"
+                    animation__hover="property: position; to: 0.04 -0.05 -0.1; dir: alternate; dur: 2700; loop: true; easing: easeInOutSine"></a-image>
 
-            <!-- Flores esquinas — sale a z=0.40 -->
-            <a-image src="#layer6" position="0 0 0" width="1.0" height="1.0"
-                material="transparent: true; alphaTest: 0.05; opacity: 0;"
-                animation__fadein="property: material.opacity; from: 0; to: 1; dur: 500; delay: 650; easing: easeOutQuad; startEvents: ar-pop;"
-                animation__zout="property: position; from: 0 0 0; to: 0 0 0.40; dur: 900; delay: 650; easing: easeOutBack; startEvents: ar-pop;"
-                class="ar-layer"></a-image>
+                <!-- Imagen flotando -->
+                <a-image src="#layer5" position="0 0 0" width="1.0" height="1.0" material="transparent: true; alphaTest: 0.05; opacity: 0;"
+                    animation__fade="property: material.opacity; from: 0; to: 1; dur: 800; delay: 500; startEvents: ar-pop"
+                    animation__hover="property: position; to: 0 0.025 0; dir: alternate; dur: 2700; loop: true; easing: easeInOutSine"></a-image>
+            </a-entity>
 
-            <!-- TIER 3: Foto Central — sale a z=0.55 (la que más flota) -->
-            <a-image src="#layer7" position="0 0 0" width="1.0" height="1.0"
-                material="transparent: true; alphaTest: 0.05; opacity: 0;"
-                animation__fadein="property: material.opacity; from: 0; to: 1; dur: 500; delay: 800; easing: easeOutQuad; startEvents: ar-pop;"
-                animation__zout="property: position; from: 0 0 0; to: 0 0 0.55; dur: 1000; delay: 800; easing: easeOutBack; startEvents: ar-pop;"
-                class="ar-layer"></a-image>
+            <!-- Flores esquinas (z=+0.60) -->
+            <a-entity position="0 0 0" class="ar-animator"
+                animation__pop="property: position; from: 0 0 0; to: 0 0 0.60; dur: 1500; delay: 650; easing: easeOutElastic; startEvents: ar-pop">
+                <a-image src="#layer6" position="0 0 0" width="1.0" height="1.0" material="transparent: true; alphaTest: 0.05; opacity: 0;"
+                    animation__fade="property: material.opacity; from: 0; to: 1; dur: 800; delay: 650; startEvents: ar-pop"
+                    animation__hover="property: position; to: 0 0.02 0; dir: alternate; dur: 2400; loop: true; easing: easeInOutSine"></a-image>
+            </a-entity>
 
-            <!-- Flores centro — sale a z=0.60 (la más cercana a ti) -->
-            <a-image src="#layer8" position="0 0 0" width="1.0" height="1.0"
-                material="transparent: true; alphaTest: 0.05; opacity: 0;"
-                animation__fadein="property: material.opacity; from: 0; to: 1; dur: 500; delay: 950; easing: easeOutQuad; startEvents: ar-pop;"
-                animation__zout="property: position; from: 0 0 0; to: 0 0 0.60; dur: 1000; delay: 950; easing: easeOutBack; startEvents: ar-pop;"
-                class="ar-layer"></a-image>
+            <!-- TIER 3: Foto Central (z=+0.80) LA QUE MÁS SALE -->
+            <a-entity position="0 0 0" class="ar-animator"
+                animation__pop="property: position; from: 0 0 0; to: 0 0 0.80; dur: 1500; delay: 800; easing: easeOutElastic; startEvents: ar-pop">
+                
+                <!-- Sombra pronunciada (porque está más y más lejos del fondo) -->
+                <a-image src="#layer7" position="0.06 -0.06 -0.15" width="1.0" height="1.0" material="transparent: true; opacity: 0; color: #000000;"
+                    animation__fade="property: material.opacity; from: 0; to: 0.25; dur: 800; delay: 1100; startEvents: ar-pop"
+                    animation__hover="property: position; to: 0.06 -0.08 -0.15; dir: alternate; dur: 3000; loop: true; easing: easeInOutSine"></a-image>
+
+                <!-- Foto central flotando -->
+                <a-image src="#layer7" position="0 0 0" width="1.0" height="1.0" material="transparent: true; alphaTest: 0.05; opacity: 0;"
+                    animation__fade="property: material.opacity; from: 0; to: 1; dur: 800; delay: 800; startEvents: ar-pop"
+                    animation__hover="property: position; to: 0 0.03 0; dir: alternate; dur: 3000; loop: true; easing: easeInOutSine"></a-image>
+            </a-entity>
+
+            <!-- Flores centro (z=+0.90) -->
+            <a-entity position="0 0 0" class="ar-animator"
+                animation__pop="property: position; from: 0 0 0; to: 0 0 0.90; dur: 1500; delay: 950; easing: easeOutElastic; startEvents: ar-pop">
+                <a-image src="#layer8" position="0 0 0" width="1.0" height="1.0" material="transparent: true; alphaTest: 0.05; opacity: 0;"
+                    animation__fade="property: material.opacity; from: 0; to: 1; dur: 800; delay: 950; startEvents: ar-pop"
+                    animation__hover="property: position; to: 0 0.02 0; dir: alternate; dur: 2600; loop: true; easing: easeInOutSine"></a-image>
+            </a-entity>
 
         </a-entity>
 
@@ -552,7 +580,7 @@
             // Disparar animación cinematográfica de entrada (solo la primera vez)
             if (!_animationFired) {
                 setTimeout(() => {
-                    document.querySelectorAll('.ar-layer').forEach(el => {
+                    document.querySelectorAll('.ar-animator, .ar-animator a-image').forEach(el => {
                         el.emit('ar-pop');
                     });
                 }, 300); // Esperar a que el tracker se estabilice
