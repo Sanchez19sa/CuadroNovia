@@ -177,63 +177,132 @@
         <source src="./assets/musica.mp3" type="audio/mpeg">
     </audio>
 
-    <!-- ====== SMOOTH-FOLLOW COMPONENT (Patrón profesional anti-jitter) ====== -->
+    <!-- ====== ESTABILIZADOR AR PROFESIONAL (Dead Zone + Adaptive Smoothing + Frame Buffer) ====== -->
     <script>
-        // Componente A-Frame que sigue suavemente al tracker usando lerp/slerp.
-        // Esto ELIMINA el temblor porque el contenido visible nunca recibe 
-        // los datos crudos del tracking - solo se interpola suavemente hacia ellos.
         AFRAME.registerComponent('smooth-follow', {
             schema: {
                 target: { type: 'selector' },
-                lerpFactor: { type: 'number', default: 0.15 }
+                // Suavizado mínimo cuando la cámara está quieta (más bajo = más estable)
+                minSmoothing: { type: 'number', default: 0.025 },
+                // Suavizado máximo cuando la cámara se mueve rápido (más alto = más responsivo)
+                maxSmoothing: { type: 'number', default: 0.2 },
+                // Velocidad de movimiento que activa el suavizado máximo
+                speedThreshold: { type: 'number', default: 0.04 },
+                // Zona muerta: ignora micro-movimientos menores a este umbral
+                deadZone: { type: 'number', default: 0.0008 },
+                // Cuántos frames promediar para reducir ruido
+                bufferSize: { type: 'number', default: 10 }
             },
             init: function() {
-                this._targetPos = new THREE.Vector3();
-                this._targetQuat = new THREE.Quaternion();
-                this._targetScale = new THREE.Vector3(1, 1, 1);
+                // Estado suavizado final
+                this._smoothedPos = new THREE.Vector3();
+                this._smoothedQuat = new THREE.Quaternion();
+                this._smoothedScale = new THREE.Vector3(1, 1, 1);
+                // Buffers para promediar frames (reduce ruido aleatorio)
+                this._posBuffer = [];
+                this._quatBuffer = [];
+                this._scaleBuffer = [];
+                // Posición anterior del tracker para calcular velocidad
+                this._prevAvgPos = new THREE.Vector3();
                 this._ready = false;
                 this._visible = false;
             },
             tick: function() {
                 const tracker = this.data.target;
                 if (!tracker) return;
-
                 const trackerObj = tracker.object3D;
 
-                // Si el tracker no es visible (target lost), ocultar contenido
+                // TARGET LOST: ocultar y resetear
                 if (!trackerObj.visible) {
                     if (this._visible) {
                         this.el.object3D.visible = false;
                         this._visible = false;
                         this._ready = false;
+                        this._posBuffer = [];
+                        this._quatBuffer = [];
+                        this._scaleBuffer = [];
                     }
                     return;
                 }
 
-                // Descomponer la matriz mundial del tracker
+                // Leer posición cruda del tracker
+                const rawPos = new THREE.Vector3();
+                const rawQuat = new THREE.Quaternion();
+                const rawScale = new THREE.Vector3();
                 trackerObj.updateWorldMatrix(true, false);
-                trackerObj.matrixWorld.decompose(
-                    this._targetPos, this._targetQuat, this._targetScale
-                );
+                trackerObj.matrixWorld.decompose(rawPos, rawQuat, rawScale);
+
+                // === PASO 1: Acumular en buffer circular ===
+                this._posBuffer.push(rawPos);
+                this._quatBuffer.push(rawQuat);
+                this._scaleBuffer.push(rawScale);
+                const maxBuf = this.data.bufferSize;
+                if (this._posBuffer.length > maxBuf) {
+                    this._posBuffer.shift();
+                    this._quatBuffer.shift();
+                    this._scaleBuffer.shift();
+                }
+
+                // === PASO 2: Calcular promedio del buffer (elimina ruido aleatorio) ===
+                const avgPos = new THREE.Vector3();
+                for (const p of this._posBuffer) avgPos.add(p);
+                avgPos.divideScalar(this._posBuffer.length);
+
+                // Promedio de quaterniones: slerp incremental
+                let avgQuat = this._quatBuffer[0].clone();
+                for (let i = 1; i < this._quatBuffer.length; i++) {
+                    avgQuat.slerp(this._quatBuffer[i], 1 / (i + 1));
+                }
+
+                const avgScale = new THREE.Vector3();
+                for (const s of this._scaleBuffer) avgScale.add(s);
+                avgScale.divideScalar(this._scaleBuffer.length);
 
                 const selfObj = this.el.object3D;
 
-                // Primera detección: saltar directamente a la posición (sin interpolación)
+                // === PRIMERA DETECCIÓN: snap directo sin interpolar ===
                 if (!this._ready) {
-                    selfObj.position.copy(this._targetPos);
-                    selfObj.quaternion.copy(this._targetQuat);
-                    selfObj.scale.copy(this._targetScale);
+                    this._smoothedPos.copy(avgPos);
+                    this._smoothedQuat.copy(avgQuat);
+                    this._smoothedScale.copy(avgScale);
+                    this._prevAvgPos.copy(avgPos);
+                    selfObj.position.copy(this._smoothedPos);
+                    selfObj.quaternion.copy(this._smoothedQuat);
+                    selfObj.scale.copy(this._smoothedScale);
                     selfObj.visible = true;
                     this._visible = true;
                     this._ready = true;
                     return;
                 }
 
-                // Interpolación suave: el contenido "persigue" al tracker sin temblor
-                const f = this.data.lerpFactor;
-                selfObj.position.lerp(this._targetPos, f);
-                selfObj.quaternion.slerp(this._targetQuat, f);
-                selfObj.scale.lerp(this._targetScale, f);
+                // === PASO 3: Calcular velocidad del promedio ===
+                const speed = avgPos.distanceTo(this._prevAvgPos);
+                this._prevAvgPos.copy(avgPos);
+
+                // === PASO 4: Smoothing adaptativo por velocidad ===
+                // Lento (ruido) → minSmoothing (0.025 = casi estático)
+                // Rápido (movimiento real) → maxSmoothing (0.2 = sigue bien)
+                const ratio = Math.min(speed / this.data.speedThreshold, 1.0);
+                const f = this.data.minSmoothing + 
+                          (this.data.maxSmoothing - this.data.minSmoothing) * ratio;
+
+                // === PASO 5: Dead Zone — ignorar micro-movimientos ===
+                const posDelta = avgPos.distanceTo(this._smoothedPos);
+                if (posDelta > this.data.deadZone) {
+                    this._smoothedPos.lerp(avgPos, f);
+                }
+
+                const quatDelta = this._smoothedQuat.angleTo(avgQuat);
+                if (quatDelta > this.data.deadZone * 2) {
+                    this._smoothedQuat.slerp(avgQuat, f);
+                }
+
+                this._smoothedScale.lerp(avgScale, f);
+
+                // === PASO 6: Aplicar resultado final al objeto visible ===
+                selfObj.position.copy(this._smoothedPos);
+                selfObj.quaternion.copy(this._smoothedQuat);
+                selfObj.scale.copy(this._smoothedScale);
 
                 if (!this._visible) {
                     selfObj.visible = true;
@@ -268,7 +337,7 @@
 
         <!-- CONTENIDO VISIBLE: sigue al tracker con interpolación suave (SIN jitter) -->
         <a-entity id="ar-content" visible="false"
-            smooth-follow="target: #ar-tracker; lerpFactor: 0.12;">
+            smooth-follow="target: #ar-tracker; minSmoothing: 0.025; maxSmoothing: 0.2; speedThreshold: 0.04; deadZone: 0.0008; bufferSize: 10;">
 
             <!-- BASE: Fondo de Flores denso (z=0) -->
             <a-image src="#layer2" position="0 0 0" width="1.0" height="1.0"
