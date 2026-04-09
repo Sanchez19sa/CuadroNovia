@@ -179,16 +179,15 @@
 
     <!-- ====== AR SCENE (Parallax 3D Real) ====== -->
     <a-scene
-        mindar-image="imageTargetSrc: ./assets/cuadro.mind; autoStart: false; uiLoading: no; uiScanning: no; filterMinCF: 0.001; filterBeta: 1000;"
+        mindar-image="imageTargetSrc: ./assets/cuadro.mind; autoStart: false; uiLoading: no; uiScanning: no; filterMinCF: 0.0001; filterBeta: 0.001;"
         color-space="sRGB"
         renderer="colorManagement: true; physicallyCorrectLights: true;"
         vr-mode-ui="enabled: false"
         device-orientation-permission-ui="enabled: false"
     >
-        <!-- Cargamos las 8 capas transparentes que generamos en Node.js -->
+        <!-- Cargamos las capas: Flores grandes únicas, fondo lleno, y fotos estables -->
         <a-assets>
-            <img id="layer1" src="./assets/collage-cuadro.png" crossorigin="anonymous">
-            <img id="layer2" src="./assets/layers/layer2_bg_flowers.png" crossorigin="anonymous">
+            <img id="layer1" src="./assets/layers/layer1_bg_floral.png" crossorigin="anonymous">
             <img id="layer3" src="./assets/layers/layer3_cross_photos.png" crossorigin="anonymous">
             <img id="layer4" src="./assets/layers/layer4_cross_flowers.png" crossorigin="anonymous">
             <img id="layer5" src="./assets/layers/layer5_corner_photos.png" crossorigin="anonymous">
@@ -202,42 +201,39 @@
 
         <a-entity mindar-image-target="targetIndex: 0" id="ar-group">
             <!-- 
-                Efecto Parallax Frontal (Pop-Out)
-                Usamos distancias POSITIVAS en el eje Z para que al mover el celular
-                las fotos orbiten visualmente sobre el papel en el mundo real.
+                Efecto Parallax Frontal Estable:
+                El Fondo floral oculta las fotos físicas, las capas flotan 
+                ligeramente sin demasiada Z para evitar vibraciones angulares
             -->
             
-            <a-image id="img-layer1" src="#layer1" position="0 0 0.01" width="1" height="1"></a-image>
-
-            <a-image id="img-layer2" src="#layer2" position="0 0 0" width="1.2" height="1.2" 
-                animation__pop="property: position; to: 0 0 0.05; dur: 2000; easing: easeOutElastic; startEvents: animate-pop"></a-image>
+            <a-image id="img-layer1" src="#layer1" position="0 0 0.00" width="1.0" height="1.0"></a-image>
 
             <a-image id="img-layer3" src="#layer3" position="0 0 0" width="1" height="1"
-                animation__pop="property: position; to: 0 0 0.12; dur: 1500; easing: easeOutElastic; startEvents: animate-pop"
-                animation__rot="property: rotation; to: 0 0 2; dur: 1800; easing: easeOutQuad; startEvents: animate-pop"></a-image>
+                animation__pop="property: position; to: 0 0 0.03; dur: 1500; easing: easeOutElastic; startEvents: animate-pop"
+                animation__rot="property: rotation; to: 0 0 1.5; dur: 1800; easing: easeOutQuad; startEvents: animate-pop"></a-image>
 
             <a-image id="img-layer4" src="#layer4" position="0 0 0" width="1" height="1"
-                animation__pop="property: position; to: 0 0 0.16; dur: 1700; easing: easeOutElastic; startEvents: animate-pop"></a-image>
+                animation__pop="property: position; to: 0 0 0.05; dur: 1700; easing: easeOutElastic; startEvents: animate-pop"></a-image>
 
             <a-image id="img-layer5" src="#layer5" position="0 0 0" width="1" height="1"
-                animation__pop="property: position; to: 0 0 0.22; dur: 1900; easing: easeOutElastic; startEvents: animate-pop"
-                animation__rot="property: rotation; to: 0 0 -3; dur: 2000; easing: easeOutQuad; startEvents: animate-pop"></a-image>
+                animation__pop="property: position; to: 0 0 0.07; dur: 1900; easing: easeOutElastic; startEvents: animate-pop"
+                animation__rot="property: rotation; to: 0 0 -2; dur: 2000; easing: easeOutQuad; startEvents: animate-pop"></a-image>
 
             <a-image id="img-layer6" src="#layer6" position="0 0 0" width="1" height="1"
-                animation__pop="property: position; to: 0 0 0.28; dur: 2100; easing: easeOutElastic; startEvents: animate-pop"></a-image>
+                animation__pop="property: position; to: 0 0 0.09; dur: 2100; easing: easeOutElastic; startEvents: animate-pop"></a-image>
 
             <a-image id="img-layer7" src="#layer7" position="0 0 0" width="1" height="1"
-                animation__pop="property: position; to: 0 0 0.35; dur: 2300; easing: easeOutElastic; startEvents: animate-pop"
-                animation__rot="property: rotation; to: 0 0 4; dur: 2200; easing: easeOutQuad; startEvents: animate-pop"></a-image>
+                animation__pop="property: position; to: 0 0 0.11; dur: 2300; easing: easeOutElastic; startEvents: animate-pop"
+                animation__rot="property: rotation; to: 0 0 2; dur: 2200; easing: easeOutQuad; startEvents: animate-pop"></a-image>
 
             <a-image id="img-layer8" src="#layer8" position="0 0 0" width="1" height="1"
-                animation__pop="property: position; to: 0 0 0.40; dur: 2500; easing: easeOutElastic; startEvents: animate-pop"></a-image>
+                animation__pop="property: position; to: 0 0 0.13; dur: 2500; easing: easeOutElastic; startEvents: animate-pop"></a-image>
 
             <!-- Texto 3D Te Amo -->
             <a-entity id="texto-teamo" position="0 -0.4 0" 
                 text="value: Te amo mi vida; font: https://cdn.aframe.io/fonts/mozillavr.fnt; color: #ff6b9d; align: center; width: 1.5;"
-                animation__pop="property: position; to: 0 -0.4 0.50; dur: 2800; easing: easeOutElastic; startEvents: animate-pop"
-                animation__float="property: position; to: 0 -0.38 0.50; dur: 2000; easing: easeInOutSine; dir: alternate; loop: true; startEvents: animate-pop">
+                animation__pop="property: position; to: 0 -0.4 0.15; dur: 2800; easing: easeOutElastic; startEvents: animate-pop"
+                animation__float="property: position; to: 0 -0.38 0.15; dur: 2000; easing: easeInOutSine; dir: alternate; loop: true; startEvents: animate-pop">
             </a-entity>
         </a-entity>
     </a-scene>

@@ -2,10 +2,13 @@ const Jimp = require('jimp');
 const path = require('path');
 const fs = require('fs');
 
-const in1 = 'C:\\Users\\Sanch\\.gemini\\antigravity\\brain\\ad7774ca-160b-4aa5-a905-b3ca85659852\\watercolor_floral_v1_1775709305410.png';
-const in2 = 'C:\\Users\\Sanch\\.gemini\\antigravity\\brain\\ad7774ca-160b-4aa5-a905-b3ca85659852\\watercolor_floral_v2_1775709318147.png';
-const out1 = path.join(__dirname, 'assets', 'flores', 'flower-w1.png');
-const out2 = path.join(__dirname, 'assets', 'flores', 'flower-w2.png');
+const baseDir = "C:\\Users\\Sanch\\.gemini\\antigravity\\brain\\ad7774ca-160b-4aa5-a905-b3ca85659852";
+
+const in1 = path.join(baseDir, 'single_flower_pink_1775710206030.png');
+const in2 = path.join(baseDir, 'single_flower_yellow_1775710220760.png');
+
+const out1 = path.join(__dirname, 'assets', 'flores', 'flower-single1.png');
+const out2 = path.join(__dirname, 'assets', 'flores', 'flower-single2.png');
 
 async function removeWhiteBackground(inputPath, outputPath) {
     if (!fs.existsSync(inputPath)) {
@@ -23,13 +26,11 @@ async function removeWhiteBackground(inputPath, outputPath) {
         // Calcular "blancura". 255 = puro blanco.
         const avg = (r + g + b) / 3;
         
-        // Si el brillo promedio es mayor a 245, lo hacemos 100% transparente
+        // Si el brillo promedio es mayor a 240, lo hacemos 100% transparente
         if (r > 240 && g > 240 && b > 240) {
             this.bitmap.data[idx + 3] = 0; // Alpha = 0
-        } else if (avg > 200) {
-            // Suavizado para evitar bordes blancos duros (halo)
-            // mapped from 200->255 to alpha 255->0
-            const alpha = Math.max(0, 255 - ((avg - 200) * (255 / 55)));
+        } else if (avg > 180) {
+            const alpha = Math.max(0, 255 - ((avg - 180) * (255 / 75)));
             this.bitmap.data[idx + 3] = alpha;
         }
     });
