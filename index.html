@@ -232,21 +232,21 @@
         AFRAME.registerComponent('smooth-follow', {
             schema: {
                 target: { type: 'selector' },
-                // Alpha cuando giroscopio confirma quietud
-                gyroStillAlpha: { type: 'number', default: 0.001 },
+                // Alpha cuando giroscopio confirma quietud (0.01% = CONGELADO)
+                gyroStillAlpha: { type: 'number', default: 0.0001 },
                 // Alpha mínimo sin giroscopio
-                minAlpha: { type: 'number', default: 0.008 },
+                minAlpha: { type: 'number', default: 0.003 },
                 // Alpha máximo en movimiento rápido
                 maxAlpha: { type: 'number', default: 0.7 },
                 // Sensibilidad a velocidad
-                speedSensitivity: { type: 'number', default: 40 },
+                speedSensitivity: { type: 'number', default: 35 },
                 // Frames de velocidad a promediar
-                speedFrames: { type: 'number', default: 5 },
+                speedFrames: { type: 'number', default: 8 },
                 // Umbral giroscopio
-                gyroStillThreshold: { type: 'number', default: 0.3 },
-                // Factor de amortiguación de rotación (0.25 = rotación se suaviza 4x más)
+                gyroStillThreshold: { type: 'number', default: 0.4 },
+                // Factor de amortiguación de rotación (0.1 = rotación se suaviza 10x más)
                 // CLAVE: las capas en Z amplifican rotación → necesita más smoothing
-                rotDamping: { type: 'number', default: 0.25 }
+                rotDamping: { type: 'number', default: 0.1 }
             },
             init: function() {
                 // Estado suavizado
@@ -353,7 +353,7 @@
 
     <!-- ====== AR SCENE ====== -->
     <a-scene
-        mindar-image="imageTargetSrc: ./assets/cuadro.mind; autoStart: false; uiLoading: no; uiScanning: no; filterMinCF: 0.1; filterBeta: 50; missTolerance: 10; warmupTolerance: 12;"
+        mindar-image="imageTargetSrc: ./assets/cuadro.mind; autoStart: false; uiLoading: no; uiScanning: no; filterMinCF: 0.2; filterBeta: 30; missTolerance: 10; warmupTolerance: 12;"
         color-space="sRGB"
         renderer="colorManagement: true; physicallyCorrectLights: true;"
         vr-mode-ui="enabled: false"
@@ -376,7 +376,7 @@
 
         <!-- CONTENIDO VISIBLE: sigue al tracker con interpolación suave (SIN jitter) -->
         <a-entity id="ar-content" visible="false"
-            smooth-follow="target: #ar-tracker; gyroStillAlpha: 0.001; minAlpha: 0.008; maxAlpha: 0.7; speedSensitivity: 40; speedFrames: 5; gyroStillThreshold: 0.3; rotDamping: 0.25;">
+            smooth-follow="target: #ar-tracker; gyroStillAlpha: 0.0001; minAlpha: 0.003; maxAlpha: 0.7; speedSensitivity: 35; speedFrames: 8; gyroStillThreshold: 0.4; rotDamping: 0.1;">
 
             <!-- BASE: Fondo de Flores (z=0) — aparece primero -->
             <a-image src="#layer2" position="0 0 0" width="1.0" height="1.0"
