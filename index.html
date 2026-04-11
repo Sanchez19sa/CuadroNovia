@@ -1455,23 +1455,34 @@
                     11.54L12 21.35z"/>
                 </svg>`;
             const configs = [
-                { size: 18, color: 'rgba(232,137,158,0.5)', opacity: 0.2, dur: 14, drift: 40, rot: 30, blur: 0 },
-                { size: 12, color: 'rgba(244,181,197,0.4)', opacity: 0.15, dur: 18, drift: -30, rot: -20, blur: 1 },
-                { size: 24, color: 'rgba(212,99,123,0.3)', opacity: 0.1, dur: 22, drift: 50, rot: 15, blur: 2 },
-                { size: 10, color: 'rgba(248,187,208,0.5)', opacity: 0.25, dur: 12, drift: -20, rot: 35, blur: 0 },
-                { size: 16, color: 'rgba(201,169,110,0.3)', opacity: 0.12, dur: 20, drift: 35, rot: -25, blur: 1 },
-                { size: 8, color: 'rgba(255,245,240,0.4)', opacity: 0.18, dur: 16, drift: -40, rot: 40, blur: 0 },
-                { size: 14, color: 'rgba(232,137,158,0.35)', opacity: 0.14, dur: 24, drift: 25, rot: -30, blur: 2 },
-                { size: 20, color: 'rgba(244,181,197,0.25)', opacity: 0.1, dur: 19, drift: -45, rot: 20, blur: 1 },
-                { size: 11, color: 'rgba(212,99,123,0.4)', opacity: 0.2, dur: 15, drift: 30, rot: -35, blur: 0 },
-                { size: 7, color: 'rgba(201,169,110,0.35)', opacity: 0.16, dur: 21, drift: -25, rot: 25, blur: 1 },
+                // Large foreground hearts (clearly visible)
+                { size: 28, color: 'rgba(232,137,158,0.85)', opacity: 0.4, dur: 13, drift: 45, rot: 25, blur: 0 },
+                { size: 22, color: 'rgba(244,181,197,0.8)', opacity: 0.35, dur: 16, drift: -35, rot: -20, blur: 0 },
+                { size: 32, color: 'rgba(212,99,123,0.7)', opacity: 0.3, dur: 20, drift: 55, rot: 15, blur: 0 },
+                { size: 18, color: 'rgba(248,187,208,0.9)', opacity: 0.45, dur: 11, drift: -25, rot: 35, blur: 0 },
+                { size: 25, color: 'rgba(232,137,158,0.75)', opacity: 0.35, dur: 18, drift: 40, rot: -30, blur: 0 },
+                { size: 15, color: 'rgba(244,181,197,0.85)', opacity: 0.4, dur: 14, drift: -50, rot: 40, blur: 0 },
+                // Medium mid-depth hearts
+                { size: 20, color: 'rgba(201,169,110,0.6)', opacity: 0.25, dur: 19, drift: 30, rot: -15, blur: 0 },
+                { size: 16, color: 'rgba(232,137,158,0.7)', opacity: 0.3, dur: 22, drift: -40, rot: 20, blur: 0 },
+                { size: 24, color: 'rgba(248,187,208,0.65)', opacity: 0.28, dur: 17, drift: 35, rot: -25, blur: 0 },
+                { size: 14, color: 'rgba(212,99,123,0.75)', opacity: 0.35, dur: 15, drift: -30, rot: 30, blur: 0 },
+                { size: 19, color: 'rgba(244,181,197,0.7)', opacity: 0.3, dur: 21, drift: 45, rot: -35, blur: 0 },
+                { size: 12, color: 'rgba(232,137,158,0.8)', opacity: 0.38, dur: 12, drift: -20, rot: 15, blur: 0 },
+                // Small background hearts (softer, some with blur for depth)
+                { size: 10, color: 'rgba(244,181,197,0.5)', opacity: 0.2, dur: 24, drift: 25, rot: -10, blur: 1 },
+                { size: 8, color: 'rgba(201,169,110,0.45)', opacity: 0.18, dur: 26, drift: -35, rot: 25, blur: 1 },
+                { size: 13, color: 'rgba(232,137,158,0.4)', opacity: 0.15, dur: 28, drift: 20, rot: -20, blur: 2 },
+                { size: 9, color: 'rgba(255,245,240,0.5)', opacity: 0.2, dur: 23, drift: -15, rot: 30, blur: 1 },
+                { size: 11, color: 'rgba(212,99,123,0.45)', opacity: 0.18, dur: 25, drift: 30, rot: -25, blur: 1 },
+                { size: 7, color: 'rgba(244,181,197,0.4)', opacity: 0.15, dur: 27, drift: -25, rot: 20, blur: 2 },
             ];
             configs.forEach((c, i) => {
                 const el = document.createElement('div');
                 el.className = 'heart-float';
                 el.innerHTML = heartSVG(c.color, 1);
                 el.style.cssText = `
-                    left: ${8 + Math.random() * 84}%;
+                    left: ${5 + Math.random() * 90}%;
                     width: ${c.size}px; height: ${c.size}px;
                     --heart-opacity: ${c.opacity};
                     --heart-drift: ${c.drift}px;
@@ -1566,17 +1577,19 @@
         (function generateArrows() {
             const container = document.getElementById('arrows-layer');
             const arrowSVG = (color) => `
-                <svg width="120" height="20" viewBox="0 0 120 20" fill="none">
-                    <line x1="0" y1="10" x2="100" y2="10" stroke="${color}" stroke-width="0.8"/>
-                    <path d="M95 5 L105 10 L95 15" stroke="${color}" stroke-width="0.8" fill="none"/>
-                    <path d="M0 10 L8 6 M0 10 L8 14" stroke="${color}" stroke-width="0.6" fill="none"/>
-                    <circle cx="50" cy="10" r="3" fill="none" stroke="${color}" stroke-width="0.5"/>
-                    <path d="M48 10 C48 8, 50 7, 50 8.5 C50 7, 52 8, 52 10 C52 12, 50 13, 50 13 C50 13, 48 12, 48 10Z" fill="${color}" opacity="0.6"/>
+                <svg width="180" height="30" viewBox="0 0 180 30" fill="none">
+                    <line x1="5" y1="15" x2="155" y2="15" stroke="${color}" stroke-width="1.2"/>
+                    <path d="M148 8 L162 15 L148 22" stroke="${color}" stroke-width="1.2" fill="none"/>
+                    <path d="M5 15 L14 9 M5 15 L14 21" stroke="${color}" stroke-width="1" fill="none"/>
+                    <circle cx="80" cy="15" r="5" fill="none" stroke="${color}" stroke-width="0.8"/>
+                    <path d="M77 15 C77 12.5, 80 11, 80 13 C80 11, 83 12.5, 83 15 C83 17.5, 80 19.5, 80 19.5 C80 19.5, 77 17.5, 77 15Z" fill="${color}" opacity="0.7"/>
                 </svg>`;
             const configs = [
-                { y: '18%', angle: -15, opacity: 0.06, dur: 28, delay: 0, color: 'rgba(232,137,158,0.4)' },
-                { y: '72%', angle: -20, opacity: 0.05, dur: 35, delay: -12, color: 'rgba(201,169,110,0.35)' },
-                { y: '45%', angle: -10, opacity: 0.04, dur: 32, delay: -20, color: 'rgba(244,181,197,0.3)' },
+                { y: '12%', angle: -12, opacity: 0.14, dur: 22, delay: 0, color: 'rgba(232,137,158,0.55)' },
+                { y: '82%', angle: -18, opacity: 0.12, dur: 28, delay: -8, color: 'rgba(201,169,110,0.5)' },
+                { y: '38%', angle: -8, opacity: 0.1, dur: 25, delay: -15, color: 'rgba(244,181,197,0.5)' },
+                { y: '58%', angle: -22, opacity: 0.11, dur: 30, delay: -4, color: 'rgba(232,137,158,0.45)' },
+                { y: '90%', angle: -5, opacity: 0.1, dur: 26, delay: -18, color: 'rgba(212,99,123,0.45)' },
             ];
             configs.forEach(c => {
                 const el = document.createElement('div');
@@ -1593,7 +1606,7 @@
             });
         })();
 
-        // --- Cupid Silhouettes (subtle, ornamental) ---
+        // --- Cupid Silhouettes (ornamental, visible) ---
         (function generateCupids() {
             const container = document.getElementById('cupids-layer');
             const cupidSVG = (color) => `
@@ -1602,14 +1615,16 @@
                     <ellipse cx="30" cy="30" rx="7" ry="10"/>
                     <path d="M20 25 Q15 20, 12 28 Q10 32, 15 30 Z"/>
                     <path d="M40 25 Q45 20, 48 28 Q50 32, 45 30 Z"/>
-                    <path d="M22 20 Q18 12, 10 16" stroke="${color}" stroke-width="1" fill="none"/>
-                    <path d="M38 20 Q42 12, 50 16" stroke="${color}" stroke-width="1" fill="none"/>
-                    <ellipse cx="18" cy="15" rx="8" ry="4" transform="rotate(-30 18 15)" fill="none" stroke="${color}" stroke-width="0.8"/>
-                    <ellipse cx="42" cy="15" rx="8" ry="4" transform="rotate(30 42 15)" fill="none" stroke="${color}" stroke-width="0.8"/>
+                    <path d="M22 20 Q18 12, 10 16" stroke="${color}" stroke-width="1.2" fill="none"/>
+                    <path d="M38 20 Q42 12, 50 16" stroke="${color}" stroke-width="1.2" fill="none"/>
+                    <ellipse cx="18" cy="15" rx="8" ry="4" transform="rotate(-30 18 15)" fill="none" stroke="${color}" stroke-width="1"/>
+                    <ellipse cx="42" cy="15" rx="8" ry="4" transform="rotate(30 42 15)" fill="none" stroke="${color}" stroke-width="1"/>
                 </svg>`;
             const configs = [
-                { x: '8%', y: '22%', size: 40, opacity: 0.045, dur: 18, delay: -5, color: 'rgba(232,137,158,0.3)' },
-                { x: '82%', y: '68%', size: 35, opacity: 0.035, dur: 22, delay: -10, color: 'rgba(201,169,110,0.25)' },
+                { x: '5%', y: '15%', size: 55, opacity: 0.1, dur: 16, delay: -3, color: 'rgba(232,137,158,0.5)' },
+                { x: '80%', y: '65%', size: 50, opacity: 0.09, dur: 20, delay: -8, color: 'rgba(201,169,110,0.45)' },
+                { x: '75%', y: '12%', size: 45, opacity: 0.08, dur: 22, delay: -14, color: 'rgba(244,181,197,0.4)' },
+                { x: '10%', y: '75%', size: 60, opacity: 0.08, dur: 18, delay: -6, color: 'rgba(212,99,123,0.4)' },
             ];
             configs.forEach(c => {
                 const el = document.createElement('div');
