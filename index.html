@@ -771,6 +771,216 @@
                 height: 280px;
             }
         }
+
+        /* ============================================================
+           ENHANCED ROMANTIC ELEMENTS — Level 2
+           ============================================================ */
+
+        /* --- Star Field (Background constellation) --- */
+        .star-field {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        .star {
+            position: absolute;
+            border-radius: 50%;
+            background: var(--pearl);
+            animation: star-twinkle ease-in-out infinite;
+        }
+        @keyframes star-twinkle {
+            0%, 100% { opacity: 0.1; transform: scale(0.8); }
+            50% { opacity: var(--star-max, 0.6); transform: scale(1.2); }
+        }
+
+        /* --- Shimmer Sparkles (larger, brighter fairy lights) --- */
+        .sparkle-layer {
+            position: absolute;
+            inset: 0;
+            z-index: 2;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        .sparkle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+        }
+        .sparkle::before, .sparkle::after {
+            content: '';
+            position: absolute;
+            background: var(--pearl);
+            border-radius: 1px;
+        }
+        .sparkle::before {
+            width: 100%;
+            height: 2px;
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%);
+        }
+        .sparkle::after {
+            width: 2px;
+            height: 100%;
+            left: 50%;
+            top: 0;
+            transform: translateX(-50%);
+        }
+        .sparkle {
+            animation: sparkle-burst ease-in-out infinite;
+        }
+        @keyframes sparkle-burst {
+            0%, 100% { opacity: 0; transform: scale(0.3) rotate(0deg); }
+            20% { opacity: var(--sparkle-max, 0.8); transform: scale(1) rotate(15deg); }
+            40% { opacity: var(--sparkle-max, 0.8); transform: scale(1.1) rotate(30deg); }
+            60% { opacity: 0.2; transform: scale(0.6) rotate(45deg); }
+        }
+
+        /* --- Love Arrows (SVG-based, artistic) --- */
+        .arrows-layer {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        .love-arrow {
+            position: absolute;
+            opacity: 0;
+            animation: arrow-float linear infinite;
+        }
+        @keyframes arrow-float {
+            0% { transform: translateX(-100px) translateY(20px) rotate(var(--arrow-angle, -25deg)); opacity: 0; }
+            15% { opacity: var(--arrow-opacity, 0.08); }
+            85% { opacity: var(--arrow-opacity, 0.06); }
+            100% { transform: translateX(calc(100vw + 100px)) translateY(-30px) rotate(var(--arrow-angle, -25deg)); opacity: 0; }
+        }
+
+        /* --- Cupid Silhouettes --- */
+        .cupids-layer {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        .cupid {
+            position: absolute;
+            opacity: 0;
+            animation: cupid-drift ease-in-out infinite;
+        }
+        @keyframes cupid-drift {
+            0%, 100% { opacity: 0; transform: translateY(0) translateX(0) scale(0.9); }
+            30% { opacity: var(--cupid-opacity, 0.06); }
+            70% { opacity: var(--cupid-opacity, 0.05); }
+            50% { transform: translateY(-15px) translateX(10px) scale(1); }
+        }
+
+        /* --- Corner Ornaments (Filigree decorations) --- */
+        .corner-ornament {
+            position: absolute;
+            z-index: 2;
+            pointer-events: none;
+            opacity: 0;
+            animation: reveal-up 1.5s cubic-bezier(0.16, 1, 0.3, 1) 1.6s forwards;
+        }
+        .corner-ornament svg {
+            display: block;
+        }
+        .corner-tl { top: 16px; left: 16px; }
+        .corner-tr { top: 16px; right: 16px; transform: scaleX(-1); }
+        .corner-bl { bottom: 16px; left: 16px; transform: scaleY(-1); }
+        .corner-br { bottom: 16px; right: 16px; transform: scale(-1, -1); }
+
+        /* --- Constellation Lines --- */
+        .constellation-layer {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        .constellation-line {
+            position: absolute;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 245, 248, 0.08), transparent);
+            transform-origin: left center;
+            animation: constellation-fade 8s ease-in-out infinite;
+        }
+        @keyframes constellation-fade {
+            0%, 100% { opacity: 0; }
+            40%, 60% { opacity: 1; }
+        }
+
+        /* --- Radial Light Burst (behind collage) --- */
+        .light-burst {
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -55%);
+            z-index: 3;
+            pointer-events: none;
+            background: radial-gradient(circle,
+                rgba(232, 137, 158, 0.08) 0%,
+                rgba(244, 181, 197, 0.04) 30%,
+                transparent 60%);
+            animation: burst-breathe 6s ease-in-out infinite;
+        }
+        @keyframes burst-breathe {
+            0%, 100% { transform: translate(-50%, -55%) scale(1); opacity: 0.6; }
+            50% { transform: translate(-50%, -55%) scale(1.15); opacity: 1; }
+        }
+
+        /* --- Decorative Collage Frame Ornaments --- */
+        .collage-frame-deco {
+            position: relative;
+            display: inline-block;
+        }
+        .frame-corner {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            z-index: 10;
+        }
+        .frame-corner svg { width: 100%; height: 100%; }
+        .frame-corner.fc-tl { top: -6px; left: -6px; }
+        .frame-corner.fc-tr { top: -6px; right: -6px; transform: scaleX(-1); }
+        .frame-corner.fc-bl { bottom: -6px; left: -6px; transform: scaleY(-1); }
+        .frame-corner.fc-br { bottom: -6px; right: -6px; transform: scale(-1, -1); }
+
+        /* --- Enhanced Title Glow --- */
+        .landing-title::after {
+            content: '';
+            display: block;
+            width: 60%;
+            height: 1px;
+            margin: 8px auto 0;
+            background: linear-gradient(90deg, transparent, var(--rose-gold-soft), transparent);
+        }
+
+        /* --- Additional Fog Layers --- */
+        .fog-4 {
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(168, 40, 80, 0.1) 0%, transparent 70%);
+            top: 70%;
+            right: 20%;
+            animation-duration: 18s;
+            animation-delay: -12s;
+        }
+        .fog-5 {
+            width: 250px;
+            height: 250px;
+            background: radial-gradient(circle, rgba(201, 169, 110, 0.06) 0%, transparent 70%);
+            top: 30%;
+            left: 60%;
+            animation-duration: 24s;
+            animation-delay: -6s;
+        }
     </style>
 </head>
 
@@ -783,16 +993,68 @@
             <div class="fog-layer fog-1"></div>
             <div class="fog-layer fog-2"></div>
             <div class="fog-layer fog-3"></div>
+            <div class="fog-layer fog-4"></div>
+            <div class="fog-layer fog-5"></div>
         </div>
+
+        <!-- Star Field -->
+        <div class="star-field" id="star-field"></div>
+
+        <!-- Constellation Lines -->
+        <div class="constellation-layer" id="constellation-layer"></div>
 
         <!-- Floating Hearts (generated via JS for depth variation) -->
         <div class="hearts-layer" id="hearts-layer"></div>
+
+        <!-- Love Arrows -->
+        <div class="arrows-layer" id="arrows-layer"></div>
+
+        <!-- Cupid Silhouettes -->
+        <div class="cupids-layer" id="cupids-layer"></div>
+
+        <!-- Shimmer Sparkles -->
+        <div class="sparkle-layer" id="sparkle-layer"></div>
 
         <!-- Fairy Dust Particles -->
         <div class="fairy-dust" id="fairy-dust"></div>
 
         <!-- Falling Petals -->
         <div class="petal-rain" id="petal-rain"></div>
+
+        <!-- Radial Light Burst (centered behind collage) -->
+        <div class="light-burst"></div>
+
+        <!-- Corner Ornaments -->
+        <div class="corner-ornament corner-tl">
+            <svg width="50" height="50" viewBox="0 0 50 50" fill="none">
+                <path d="M2 48 C2 24, 8 8, 48 2" stroke="rgba(201,169,110,0.2)" stroke-width="1" fill="none"/>
+                <path d="M2 38 C2 20, 6 12, 38 2" stroke="rgba(201,169,110,0.12)" stroke-width="0.5" fill="none"/>
+                <circle cx="4" cy="46" r="2" fill="rgba(201,169,110,0.15)"/>
+                <circle cx="46" cy="4" r="1.5" fill="rgba(201,169,110,0.12)"/>
+            </svg>
+        </div>
+        <div class="corner-ornament corner-tr">
+            <svg width="50" height="50" viewBox="0 0 50 50" fill="none">
+                <path d="M2 48 C2 24, 8 8, 48 2" stroke="rgba(201,169,110,0.2)" stroke-width="1" fill="none"/>
+                <path d="M2 38 C2 20, 6 12, 38 2" stroke="rgba(201,169,110,0.12)" stroke-width="0.5" fill="none"/>
+                <circle cx="4" cy="46" r="2" fill="rgba(201,169,110,0.15)"/>
+                <circle cx="46" cy="4" r="1.5" fill="rgba(201,169,110,0.12)"/>
+            </svg>
+        </div>
+        <div class="corner-ornament corner-bl">
+            <svg width="50" height="50" viewBox="0 0 50 50" fill="none">
+                <path d="M2 48 C2 24, 8 8, 48 2" stroke="rgba(201,169,110,0.2)" stroke-width="1" fill="none"/>
+                <path d="M2 38 C2 20, 6 12, 38 2" stroke="rgba(201,169,110,0.12)" stroke-width="0.5" fill="none"/>
+                <circle cx="4" cy="46" r="2" fill="rgba(201,169,110,0.15)"/>
+            </svg>
+        </div>
+        <div class="corner-ornament corner-br">
+            <svg width="50" height="50" viewBox="0 0 50 50" fill="none">
+                <path d="M2 48 C2 24, 8 8, 48 2" stroke="rgba(201,169,110,0.2)" stroke-width="1" fill="none"/>
+                <path d="M2 38 C2 20, 6 12, 38 2" stroke="rgba(201,169,110,0.12)" stroke-width="0.5" fill="none"/>
+                <circle cx="4" cy="46" r="2" fill="rgba(201,169,110,0.15)"/>
+            </svg>
+        </div>
 
         <!-- Main Content -->
         <div class="landing-content">
@@ -802,8 +1064,14 @@
             <p class="landing-script">Soris y Santi</p>
 
             <a href="./ver-cuadro.html" target="_self" class="collage-link" title="Ver imagen completa">
-                <div class="collage-preview">
-                    <img src="./assets/collage-cuadro.png" alt="Nuestras fotos">
+                <div class="collage-frame-deco">
+                    <div class="frame-corner fc-tl"><svg viewBox="0 0 20 20"><path d="M1 19 L1 6 Q1 1 6 1 L19 1" stroke="rgba(201,169,110,0.35)" stroke-width="1" fill="none"/></svg></div>
+                    <div class="frame-corner fc-tr"><svg viewBox="0 0 20 20"><path d="M1 19 L1 6 Q1 1 6 1 L19 1" stroke="rgba(201,169,110,0.35)" stroke-width="1" fill="none"/></svg></div>
+                    <div class="frame-corner fc-bl"><svg viewBox="0 0 20 20"><path d="M1 19 L1 6 Q1 1 6 1 L19 1" stroke="rgba(201,169,110,0.35)" stroke-width="1" fill="none"/></svg></div>
+                    <div class="frame-corner fc-br"><svg viewBox="0 0 20 20"><path d="M1 19 L1 6 Q1 1 6 1 L19 1" stroke="rgba(201,169,110,0.35)" stroke-width="1" fill="none"/></svg></div>
+                    <div class="collage-preview">
+                        <img src="./assets/collage-cuadro.png" alt="Nuestras fotos">
+                    </div>
                 </div>
             </a>
             <p class="collage-hint">Toca la imagen para verla completa</p>
@@ -1254,6 +1522,135 @@
                 `;
                 container.appendChild(p);
             }
+        })();
+
+        // --- Star Field ---
+        (function generateStars() {
+            const container = document.getElementById('star-field');
+            for (let i = 0; i < 40; i++) {
+                const s = document.createElement('div');
+                s.className = 'star';
+                const size = 1 + Math.random() * 2.5;
+                s.style.cssText = `
+                    left: ${Math.random() * 100}%;
+                    top: ${Math.random() * 100}%;
+                    width: ${size}px; height: ${size}px;
+                    --star-max: ${0.3 + Math.random() * 0.5};
+                    animation-duration: ${2 + Math.random() * 6}s;
+                    animation-delay: ${-Math.random() * 8}s;
+                `;
+                container.appendChild(s);
+            }
+        })();
+
+        // --- Shimmer Sparkles (cross-shaped) ---
+        (function generateSparkles() {
+            const container = document.getElementById('sparkle-layer');
+            for (let i = 0; i < 20; i++) {
+                const s = document.createElement('div');
+                s.className = 'sparkle';
+                const size = 3 + Math.random() * 5;
+                s.style.cssText = `
+                    left: ${Math.random() * 100}%;
+                    top: ${Math.random() * 100}%;
+                    width: ${size}px; height: ${size}px;
+                    --sparkle-max: ${0.4 + Math.random() * 0.5};
+                    animation-duration: ${2 + Math.random() * 4}s;
+                    animation-delay: ${-Math.random() * 6}s;
+                `;
+                container.appendChild(s);
+            }
+        })();
+
+        // --- Love Arrows (SVG, elegant & artistic) ---
+        (function generateArrows() {
+            const container = document.getElementById('arrows-layer');
+            const arrowSVG = (color) => `
+                <svg width="120" height="20" viewBox="0 0 120 20" fill="none">
+                    <line x1="0" y1="10" x2="100" y2="10" stroke="${color}" stroke-width="0.8"/>
+                    <path d="M95 5 L105 10 L95 15" stroke="${color}" stroke-width="0.8" fill="none"/>
+                    <path d="M0 10 L8 6 M0 10 L8 14" stroke="${color}" stroke-width="0.6" fill="none"/>
+                    <circle cx="50" cy="10" r="3" fill="none" stroke="${color}" stroke-width="0.5"/>
+                    <path d="M48 10 C48 8, 50 7, 50 8.5 C50 7, 52 8, 52 10 C52 12, 50 13, 50 13 C50 13, 48 12, 48 10Z" fill="${color}" opacity="0.6"/>
+                </svg>`;
+            const configs = [
+                { y: '18%', angle: -15, opacity: 0.06, dur: 28, delay: 0, color: 'rgba(232,137,158,0.4)' },
+                { y: '72%', angle: -20, opacity: 0.05, dur: 35, delay: -12, color: 'rgba(201,169,110,0.35)' },
+                { y: '45%', angle: -10, opacity: 0.04, dur: 32, delay: -20, color: 'rgba(244,181,197,0.3)' },
+            ];
+            configs.forEach(c => {
+                const el = document.createElement('div');
+                el.className = 'love-arrow';
+                el.innerHTML = arrowSVG(c.color);
+                el.style.cssText = `
+                    top: ${c.y};
+                    --arrow-angle: ${c.angle}deg;
+                    --arrow-opacity: ${c.opacity};
+                    animation-duration: ${c.dur}s;
+                    animation-delay: ${c.delay}s;
+                `;
+                container.appendChild(el);
+            });
+        })();
+
+        // --- Cupid Silhouettes (subtle, ornamental) ---
+        (function generateCupids() {
+            const container = document.getElementById('cupids-layer');
+            const cupidSVG = (color) => `
+                <svg viewBox="0 0 60 60" fill="${color}">
+                    <circle cx="30" cy="14" r="5"/>
+                    <ellipse cx="30" cy="30" rx="7" ry="10"/>
+                    <path d="M20 25 Q15 20, 12 28 Q10 32, 15 30 Z"/>
+                    <path d="M40 25 Q45 20, 48 28 Q50 32, 45 30 Z"/>
+                    <path d="M22 20 Q18 12, 10 16" stroke="${color}" stroke-width="1" fill="none"/>
+                    <path d="M38 20 Q42 12, 50 16" stroke="${color}" stroke-width="1" fill="none"/>
+                    <ellipse cx="18" cy="15" rx="8" ry="4" transform="rotate(-30 18 15)" fill="none" stroke="${color}" stroke-width="0.8"/>
+                    <ellipse cx="42" cy="15" rx="8" ry="4" transform="rotate(30 42 15)" fill="none" stroke="${color}" stroke-width="0.8"/>
+                </svg>`;
+            const configs = [
+                { x: '8%', y: '22%', size: 40, opacity: 0.045, dur: 18, delay: -5, color: 'rgba(232,137,158,0.3)' },
+                { x: '82%', y: '68%', size: 35, opacity: 0.035, dur: 22, delay: -10, color: 'rgba(201,169,110,0.25)' },
+            ];
+            configs.forEach(c => {
+                const el = document.createElement('div');
+                el.className = 'cupid';
+                el.innerHTML = cupidSVG(c.color);
+                el.style.cssText = `
+                    left: ${c.x}; top: ${c.y};
+                    width: ${c.size}px; height: ${c.size}px;
+                    --cupid-opacity: ${c.opacity};
+                    animation-duration: ${c.dur}s;
+                    animation-delay: ${c.delay}s;
+                `;
+                container.appendChild(el);
+            });
+        })();
+
+        // --- Constellation Lines ---
+        (function generateConstellations() {
+            const container = document.getElementById('constellation-layer');
+            const lines = [
+                { x: '12%', y: '15%', w: 80, angle: 25, delay: 0 },
+                { x: '70%', y: '10%', w: 60, angle: -15, delay: -3 },
+                { x: '5%', y: '55%', w: 90, angle: 10, delay: -2 },
+                { x: '80%', y: '50%', w: 50, angle: -30, delay: -5 },
+                { x: '25%', y: '80%', w: 70, angle: -5, delay: -1 },
+                { x: '60%', y: '75%', w: 55, angle: 20, delay: -4 },
+                { x: '40%', y: '20%', w: 45, angle: -20, delay: -6 },
+                { x: '85%', y: '35%', w: 65, angle: 8, delay: -7 },
+            ];
+            lines.forEach(l => {
+                const el = document.createElement('div');
+                el.className = 'constellation-line';
+                el.style.cssText = `
+                    left: ${l.x}; top: ${l.y};
+                    width: ${l.w}px;
+                    transform: rotate(${l.angle}deg);
+                    animation-delay: ${l.delay}s;
+                    animation-duration: ${6 + Math.random() * 6}s;
+                `;
+                container.appendChild(el);
+            });
         })();
 
         // ============================================================
