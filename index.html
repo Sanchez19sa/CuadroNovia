@@ -22,16 +22,16 @@
 
         /* --- Design Tokens --- */
         :root {
-            --bg-deep: #1a0510;
-            --bg-mid: #2a0a1a;
-            --bg-rose: #3d1028;
+            --bg-deep: #2a0a18;
+            --bg-mid: #3d1228;
+            --bg-rose: #5c1a3a;
             --pink-100: #fce4ec;
             --pink-200: #f8bbd0;
             --pink-300: #f4b5c5;
             --pink-400: #e8899e;
             --pink-500: #d4637b;
             --pink-600: #c0465e;
-            --pink-700: #9b1b3d;
+            --pink-700: #a82850;
             --rose-gold: #c9a96e;
             --rose-gold-soft: rgba(201, 169, 110, 0.25);
             --ivory: #fff5f0;
@@ -58,10 +58,10 @@
         #landing {
             position: fixed; inset: 0; z-index: 100;
             background:
-                radial-gradient(ellipse at 50% 20%, rgba(61, 16, 40, 0.9) 0%, transparent 70%),
-                radial-gradient(ellipse at 80% 80%, rgba(155, 27, 61, 0.15) 0%, transparent 50%),
-                radial-gradient(ellipse at 20% 70%, rgba(201, 169, 110, 0.08) 0%, transparent 50%),
-                linear-gradient(175deg, var(--bg-rose) 0%, var(--bg-mid) 35%, var(--bg-deep) 100%);
+                radial-gradient(ellipse at 50% 20%, rgba(92, 26, 58, 0.95) 0%, transparent 65%),
+                radial-gradient(ellipse at 80% 80%, rgba(168, 40, 80, 0.2) 0%, transparent 50%),
+                radial-gradient(ellipse at 20% 70%, rgba(212, 99, 123, 0.1) 0%, transparent 50%),
+                linear-gradient(175deg, var(--bg-rose) 0%, var(--bg-mid) 40%, var(--bg-deep) 100%);
             display: flex; flex-direction: column;
             align-items: center; justify-content: center;
             padding: 24px; text-align: center;
@@ -74,7 +74,7 @@
         #landing::before {
             content: '';
             position: absolute; inset: 0;
-            background: radial-gradient(ellipse at center, transparent 40%, rgba(10, 2, 6, 0.5) 100%);
+            background: radial-gradient(ellipse at center, transparent 45%, rgba(20, 4, 12, 0.4) 100%);
             z-index: 0; pointer-events: none;
         }
 
@@ -89,20 +89,20 @@
             animation: fog-drift 18s ease-in-out infinite alternate;
         }
         .fog-1 {
-            width: 400px; height: 400px;
-            background: radial-gradient(circle, rgba(232, 137, 158, 0.12) 0%, transparent 70%);
-            top: 10%; left: -10%;
+            width: 500px; height: 500px;
+            background: radial-gradient(circle, rgba(232, 137, 158, 0.18) 0%, transparent 70%);
+            top: 5%; left: -10%;
             animation-duration: 20s;
         }
         .fog-2 {
-            width: 350px; height: 350px;
-            background: radial-gradient(circle, rgba(201, 169, 110, 0.08) 0%, transparent 70%);
+            width: 400px; height: 400px;
+            background: radial-gradient(circle, rgba(212, 99, 123, 0.12) 0%, transparent 70%);
             bottom: 5%; right: -8%;
             animation-duration: 25s; animation-delay: -8s;
         }
         .fog-3 {
-            width: 300px; height: 300px;
-            background: radial-gradient(circle, rgba(244, 181, 197, 0.1) 0%, transparent 70%);
+            width: 350px; height: 350px;
+            background: radial-gradient(circle, rgba(244, 181, 197, 0.14) 0%, transparent 70%);
             top: 50%; left: 40%;
             animation-duration: 22s; animation-delay: -4s;
         }
