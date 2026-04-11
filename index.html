@@ -838,26 +838,6 @@
             60% { opacity: 0.2; transform: scale(0.6) rotate(45deg); }
         }
 
-        /* --- Love Arrows (SVG-based, artistic) --- */
-        .arrows-layer {
-            position: absolute;
-            inset: 0;
-            z-index: 1;
-            pointer-events: none;
-            overflow: hidden;
-        }
-        .love-arrow {
-            position: absolute;
-            opacity: 0;
-            animation: arrow-float linear infinite;
-        }
-        @keyframes arrow-float {
-            0% { transform: translateX(-100px) translateY(20px) rotate(var(--arrow-angle, -25deg)); opacity: 0; }
-            15% { opacity: var(--arrow-opacity, 0.08); }
-            85% { opacity: var(--arrow-opacity, 0.06); }
-            100% { transform: translateX(calc(100vw + 100px)) translateY(-30px) rotate(var(--arrow-angle, -25deg)); opacity: 0; }
-        }
-
 
 
         /* --- Corner Ornaments (Filigree decorations) --- */
@@ -988,8 +968,6 @@
         <!-- Floating Hearts (generated via JS for depth variation) -->
         <div class="hearts-layer" id="hearts-layer"></div>
 
-        <!-- Love Arrows -->
-        <div class="arrows-layer" id="arrows-layer"></div>
 
         <!-- Cupid Silhouettes -->
         <div class="cupids-layer" id="cupids-layer"></div>
@@ -1555,41 +1533,6 @@
             }
         })();
 
-        // --- Love Arrows (SVG, elegant pierced heart) ---
-        (function generateArrows() {
-            const container = document.getElementById('arrows-layer');
-            const arrowSVG = (color) => `
-                <svg width="180" height="30" viewBox="0 0 180 30" fill="none">
-                    <!-- Arrow shaft -->
-                    <line x1="10" y1="15" x2="160" y2="15" stroke="${color}" stroke-width="1.2"/>
-                    <!-- Arrowhead (right side only) -->
-                    <path d="M150 8 L165 15 L150 22" stroke="${color}" stroke-width="1.2" stroke-linejoin="round" fill="none"/>
-                    <!-- Pierced Heart (center) -->
-                    <path d="M90 15 C90 10, 80 10, 80 15 C80 20, 90 25, 90 25 C90 25, 100 20, 100 15 C100 10, 90 10, 90 15 Z" fill="${color}" opacity="0.6"/>
-                    <!-- Heart outline for definition -->
-                    <path d="M90 15 C90 10, 80 10, 80 15 C80 20, 90 25, 90 25 C90 25, 100 20, 100 15 C100 10, 90 10, 90 15 Z" stroke="${color}" stroke-width="1" fill="none"/>
-                </svg>`;
-            const configs = [
-                { y: '12%', angle: -12, opacity: 0.14, dur: 22, delay: 0, color: 'rgba(232,137,158,0.55)' },
-                { y: '82%', angle: -18, opacity: 0.12, dur: 28, delay: -8, color: 'rgba(201,169,110,0.5)' },
-                { y: '38%', angle: -8, opacity: 0.1, dur: 25, delay: -15, color: 'rgba(244,181,197,0.5)' },
-                { y: '58%', angle: -22, opacity: 0.11, dur: 30, delay: -4, color: 'rgba(232,137,158,0.45)' },
-                { y: '90%', angle: -5, opacity: 0.1, dur: 26, delay: -18, color: 'rgba(212,99,123,0.45)' },
-            ];
-            configs.forEach(c => {
-                const el = document.createElement('div');
-                el.className = 'love-arrow';
-                el.innerHTML = arrowSVG(c.color);
-                el.style.cssText = `
-                    top: ${c.y};
-                    --arrow-angle: ${c.angle}deg;
-                    --arrow-opacity: ${c.opacity};
-                    animation-duration: ${c.dur}s;
-                    animation-delay: ${c.delay}s;
-                `;
-                container.appendChild(el);
-            });
-        })();
 
         // --- Cupid Silhouettes (removed per user request) ---
 
