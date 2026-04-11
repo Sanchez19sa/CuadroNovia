@@ -858,25 +858,7 @@
             100% { transform: translateX(calc(100vw + 100px)) translateY(-30px) rotate(var(--arrow-angle, -25deg)); opacity: 0; }
         }
 
-        /* --- Cupid Silhouettes --- */
-        .cupids-layer {
-            position: absolute;
-            inset: 0;
-            z-index: 1;
-            pointer-events: none;
-            overflow: hidden;
-        }
-        .cupid {
-            position: absolute;
-            opacity: 0;
-            animation: cupid-drift ease-in-out infinite;
-        }
-        @keyframes cupid-drift {
-            0%, 100% { opacity: 0; transform: translateY(0) translateX(0) scale(0.9); }
-            30% { opacity: var(--cupid-opacity, 0.06); }
-            70% { opacity: var(--cupid-opacity, 0.05); }
-            50% { transform: translateY(-15px) translateX(10px) scale(1); }
-        }
+
 
         /* --- Corner Ornaments (Filigree decorations) --- */
         .corner-ornament {
@@ -1606,40 +1588,7 @@
             });
         })();
 
-        // --- Cupid Silhouettes (ornamental, visible) ---
-        (function generateCupids() {
-            const container = document.getElementById('cupids-layer');
-            const cupidSVG = (color) => `
-                <svg viewBox="0 0 60 60" fill="${color}">
-                    <circle cx="30" cy="14" r="5"/>
-                    <ellipse cx="30" cy="30" rx="7" ry="10"/>
-                    <path d="M20 25 Q15 20, 12 28 Q10 32, 15 30 Z"/>
-                    <path d="M40 25 Q45 20, 48 28 Q50 32, 45 30 Z"/>
-                    <path d="M22 20 Q18 12, 10 16" stroke="${color}" stroke-width="1.2" fill="none"/>
-                    <path d="M38 20 Q42 12, 50 16" stroke="${color}" stroke-width="1.2" fill="none"/>
-                    <ellipse cx="18" cy="15" rx="8" ry="4" transform="rotate(-30 18 15)" fill="none" stroke="${color}" stroke-width="1"/>
-                    <ellipse cx="42" cy="15" rx="8" ry="4" transform="rotate(30 42 15)" fill="none" stroke="${color}" stroke-width="1"/>
-                </svg>`;
-            const configs = [
-                { x: '5%', y: '15%', size: 55, opacity: 0.1, dur: 16, delay: -3, color: 'rgba(232,137,158,0.5)' },
-                { x: '80%', y: '65%', size: 50, opacity: 0.09, dur: 20, delay: -8, color: 'rgba(201,169,110,0.45)' },
-                { x: '75%', y: '12%', size: 45, opacity: 0.08, dur: 22, delay: -14, color: 'rgba(244,181,197,0.4)' },
-                { x: '10%', y: '75%', size: 60, opacity: 0.08, dur: 18, delay: -6, color: 'rgba(212,99,123,0.4)' },
-            ];
-            configs.forEach(c => {
-                const el = document.createElement('div');
-                el.className = 'cupid';
-                el.innerHTML = cupidSVG(c.color);
-                el.style.cssText = `
-                    left: ${c.x}; top: ${c.y};
-                    width: ${c.size}px; height: ${c.size}px;
-                    --cupid-opacity: ${c.opacity};
-                    animation-duration: ${c.dur}s;
-                    animation-delay: ${c.delay}s;
-                `;
-                container.appendChild(el);
-            });
-        })();
+        // --- Cupid Silhouettes (removed per user request) ---
 
         // --- Constellation Lines ---
         (function generateConstellations() {
