@@ -1202,9 +1202,9 @@
                 // Hysteresis: Si tu mano está firme (gyro < 0.3) y la cámara reporta un movimiento de "ruido" minúsculo,
                 // MATA el ruido obligando a la lectura a ser idéntica al cuadro anterior. Congelado absoluto.
                 if (window._gyroAvailable && window._gyroSpeed < 0.2) {
-                    if (p.distanceTo(this._pos) < 0.008 &&
-                        q.angleTo(this._quat) < 0.03 &&
-                        s.distanceTo(this._scale) < 0.03) {
+                    if (p.distanceTo(this._pos) < 0.02 &&
+                        q.angleTo(this._quat) < 0.06 &&
+                        s.distanceTo(this._scale) < 0.06) {
                         p.copy(this._pos);
                         q.copy(this._quat);
                         s.copy(this._scale);
