@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 
 <head>
@@ -1130,18 +1130,18 @@
                 gyroStillAlpha: { type: 'number', default: 0.0 },
                 // Alpha mínimo sin giroscopio
                 minAlpha: { type: 'number', default: 0.01 },
-                // Alpha máximo en movimiento rápido
-                maxAlpha: { type: 'number', default: 0.8 },
+                // Alpha máximo en movimiento rápido (1.0 = seguimiento inmediato)
+                maxAlpha: { type: 'number', default: 1.0 },
                 // Sensibilidad a velocidad
-                speedSensitivity: { type: 'number', default: 50 },
-                // Umbral donde se considera TOTALMENTE QUIETO el celular (restaurado)
-                gyroStillThreshold: { type: 'number', default: 0.15 },
-                // Umbral donde empieza a moverse intencionalmente (restaurado)
-                gyroMoveThreshold: { type: 'number', default: 0.35 },
-                // Factor de amortiguación de rotación (rotación más estable)
-                rotDamping: { type: 'number', default: 0.15 },
-                // Factor de amortiguación de escala (ELIMINA efecto de "respiración")
-                scaleDamping: { type: 'number', default: 0.05 }
+                speedSensitivity: { type: 'number', default: 60 },
+                // Umbral donde se considera TOTALMENTE QUIETO el celular
+                gyroStillThreshold: { type: 'number', default: 0.10 },
+                // Umbral donde empieza a moverse intencionalmente
+                gyroMoveThreshold: { type: 'number', default: 0.25 },
+                // Factor de amortiguación de rotación (mayor = tracking más rápido)
+                rotDamping: { type: 'number', default: 0.3 },
+                // Factor de amortiguación de escala (mayor = tracking más rápido en Z)
+                scaleDamping: { type: 'number', default: 0.15 }
             },
             init: function () {
                 // Estado suavizado
@@ -1201,10 +1201,10 @@
                 // Cuando te acercas mucho al cuadro, un error de cámara de 1mm se magnifica en las capas flotantes.
                 // Hysteresis: Si tu mano está firme (gyro < 0.3) y la cámara reporta un movimiento de "ruido" minúsculo,
                 // MATA el ruido obligando a la lectura a ser idéntica al cuadro anterior. Congelado absoluto.
-                if (window._gyroAvailable && window._gyroSpeed < 0.3) {
-                    if (p.distanceTo(this._pos) < 0.015 &&
-                        q.angleTo(this._quat) < 0.05 &&
-                        s.distanceTo(this._scale) < 0.05) {
+                if (window._gyroAvailable && window._gyroSpeed < 0.2) {
+                    if (p.distanceTo(this._pos) < 0.008 &&
+                        q.angleTo(this._quat) < 0.03 &&
+                        s.distanceTo(this._scale) < 0.03) {
                         p.copy(this._pos);
                         q.copy(this._quat);
                         s.copy(this._scale);
@@ -1279,7 +1279,7 @@
 
     <!-- ====== AR SCENE ====== -->
     <a-scene
-        mindar-image="imageTargetSrc: ./assets/cuadro.mind; autoStart: false; uiLoading: no; uiScanning: no; filterMinCF: 0.1; filterBeta: 50; missTolerance: 10; warmupTolerance: 12;"
+        mindar-image="imageTargetSrc: ./assets/cuadro.mind; autoStart: false; uiLoading: no; uiScanning: no; filterMinCF: 0.05; filterBeta: 30; missTolerance: 15; warmupTolerance: 15;"
         color-space="sRGB" renderer="colorManagement: true; physicallyCorrectLights: true;" vr-mode-ui="enabled: false"
         device-orientation-permission-ui="enabled: false">
 
@@ -1300,7 +1300,7 @@
 
         <!-- CONTENIDO VISIBLE: sigue al tracker con interpolación suave (SIN jitter) -->
         <a-entity id="ar-content" visible="false"
-            smooth-follow="target: #ar-tracker; gyroStillAlpha: 0.0; minAlpha: 0.01; maxAlpha: 0.8; speedSensitivity: 50; gyroStillThreshold: 0.15; gyroMoveThreshold: 0.35; rotDamping: 0.15; scaleDamping: 0.05;">
+            smooth-follow="target: #ar-tracker; gyroStillAlpha: 0.0; minAlpha: 0.01; maxAlpha: 1.0; speedSensitivity: 60; gyroStillThreshold: 0.10; gyroMoveThreshold: 0.25; rotDamping: 0.3; scaleDamping: 0.15;">
 
             <!-- BASE: Fondo de Flores (z=0) — aparece primero -->
             <a-image src="#layer2" position="0 0 0" width="1.0" height="1.0"
@@ -1312,42 +1312,42 @@
             <a-image src="#layer3" position="0 0 0" width="1.0" height="1.0"
                 material="transparent: true; alphaTest: 0.05; opacity: 0;"
                 animation__fadein="property: material.opacity; from: 0; to: 1; dur: 500; delay: 200; easing: easeOutQuad; startEvents: ar-pop;"
-                animation__zout="property: position; from: 0 0 0; to: 0 0 0.15; dur: 800; delay: 200; easing: easeOutBack; startEvents: ar-pop;"
+                animation__zout="property: position; from: 0 0 0; to: 0 0 0.25; dur: 800; delay: 200; easing: easeOutBack; startEvents: ar-pop;"
                 class="ar-layer"></a-image>
 
-            <!-- Flores de la cruz — sale a z=0.20 -->
+            <!-- Flores de la cruz — sale a z=0.35 -->
             <a-image src="#layer4" position="0 0 0" width="1.0" height="1.0"
                 material="transparent: true; alphaTest: 0.05; opacity: 0;"
                 animation__fadein="property: material.opacity; from: 0; to: 1; dur: 500; delay: 350; easing: easeOutQuad; startEvents: ar-pop;"
-                animation__zout="property: position; from: 0 0 0; to: 0 0 0.20; dur: 800; delay: 350; easing: easeOutBack; startEvents: ar-pop;"
+                animation__zout="property: position; from: 0 0 0; to: 0 0 0.35; dur: 800; delay: 350; easing: easeOutBack; startEvents: ar-pop;"
                 class="ar-layer"></a-image>
 
-            <!-- TIER 2: Fotos Esquinas — sale a z=0.35 -->
+            <!-- TIER 2: Fotos Esquinas — sale a z=0.55 -->
             <a-image src="#layer5" position="0 0 0" width="1.0" height="1.0"
                 material="transparent: true; alphaTest: 0.05; opacity: 0;"
                 animation__fadein="property: material.opacity; from: 0; to: 1; dur: 500; delay: 500; easing: easeOutQuad; startEvents: ar-pop;"
-                animation__zout="property: position; from: 0 0 0; to: 0 0 0.35; dur: 900; delay: 500; easing: easeOutBack; startEvents: ar-pop;"
+                animation__zout="property: position; from: 0 0 0; to: 0 0 0.55; dur: 900; delay: 500; easing: easeOutBack; startEvents: ar-pop;"
                 class="ar-layer"></a-image>
 
-            <!-- Flores esquinas — sale a z=0.40 -->
+            <!-- Flores esquinas — sale a z=0.65 -->
             <a-image src="#layer6" position="0 0 0" width="1.0" height="1.0"
                 material="transparent: true; alphaTest: 0.05; opacity: 0;"
                 animation__fadein="property: material.opacity; from: 0; to: 1; dur: 500; delay: 650; easing: easeOutQuad; startEvents: ar-pop;"
-                animation__zout="property: position; from: 0 0 0; to: 0 0 0.40; dur: 900; delay: 650; easing: easeOutBack; startEvents: ar-pop;"
+                animation__zout="property: position; from: 0 0 0; to: 0 0 0.65; dur: 900; delay: 650; easing: easeOutBack; startEvents: ar-pop;"
                 class="ar-layer"></a-image>
 
-            <!-- TIER 3: Foto Central — sale a z=0.55 (la que más flota) -->
+            <!-- TIER 3: Foto Central — sale a z=0.85 (la que más flota) -->
             <a-image src="#layer7" position="0 0 0" width="1.0" height="1.0"
                 material="transparent: true; alphaTest: 0.05; opacity: 0;"
                 animation__fadein="property: material.opacity; from: 0; to: 1; dur: 500; delay: 800; easing: easeOutQuad; startEvents: ar-pop;"
-                animation__zout="property: position; from: 0 0 0; to: 0 0 0.55; dur: 1000; delay: 800; easing: easeOutBack; startEvents: ar-pop;"
+                animation__zout="property: position; from: 0 0 0; to: 0 0 0.85; dur: 1000; delay: 800; easing: easeOutBack; startEvents: ar-pop;"
                 class="ar-layer"></a-image>
 
-            <!-- Flores centro — sale a z=0.60 (la más cercana a ti) -->
+            <!-- Flores centro — sale a z=0.95 (la más cercana a ti) -->
             <a-image src="#layer8" position="0 0 0" width="1.0" height="1.0"
                 material="transparent: true; alphaTest: 0.05; opacity: 0;"
                 animation__fadein="property: material.opacity; from: 0; to: 1; dur: 500; delay: 950; easing: easeOutQuad; startEvents: ar-pop;"
-                animation__zout="property: position; from: 0 0 0; to: 0 0 0.60; dur: 1000; delay: 950; easing: easeOutBack; startEvents: ar-pop;"
+                animation__zout="property: position; from: 0 0 0; to: 0 0 0.95; dur: 1000; delay: 950; easing: easeOutBack; startEvents: ar-pop;"
                 class="ar-layer"></a-image>
 
         </a-entity>
