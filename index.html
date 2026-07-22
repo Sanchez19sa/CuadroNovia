@@ -1370,7 +1370,7 @@
                         d.label.toLowerCase().includes('rear') ||
                         d.label.toLowerCase().includes('trasera') ||
                         d.label.toLowerCase().includes('environment') ||
-                        d.label.includes('0'))
+                        /\d/.test(d.label))
                 );
                 console.log('Cámaras traseras detectadas:', rearCams.map(c => c.label));
                 if (rearCams.length >= 2) {
