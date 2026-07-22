@@ -1366,6 +1366,7 @@
                 const devices = await navigator.mediaDevices.enumerateDevices();
                 const rearCams = devices.filter(d =>
                     d.kind === 'videoinput' &&
+                    !d.label.toLowerCase().includes('front') &&
                     (d.label.toLowerCase().includes('back') ||
                         d.label.toLowerCase().includes('rear') ||
                         d.label.toLowerCase().includes('trasera') ||
