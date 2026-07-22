@@ -1091,7 +1091,7 @@
                 if (speed > window._gyroSpeed) {
                     window._gyroSpeed = speed;
                 } else {
-                    window._gyroSpeed = window._gyroSpeed * 0.85 + speed * 0.15;
+                    window._gyroSpeed = window._gyroSpeed * 0.82 + speed * 0.18;
                 }
             }
             _prevGyroA = e.alpha;
@@ -1135,7 +1135,7 @@
                 // Sensibilidad a velocidad
                 speedSensitivity: { type: 'number', default: 60 },
                 // Umbral donde se considera TOTALMENTE QUIETO el celular
-                gyroStillThreshold: { type: 'number', default: 0.10 },
+                gyroStillThreshold: { type: 'number', default: 0.15 },
                 // Umbral donde empieza a moverse intencionalmente
                 gyroMoveThreshold: { type: 'number', default: 0.25 },
                 // Factor de amortiguación de rotación (mayor = tracking más rápido)
@@ -1300,7 +1300,7 @@
 
         <!-- CONTENIDO VISIBLE: sigue al tracker con interpolación suave (SIN jitter) -->
         <a-entity id="ar-content" visible="false"
-            smooth-follow="target: #ar-tracker; gyroStillAlpha: 0.0; minAlpha: 0.01; maxAlpha: 1.0; speedSensitivity: 60; gyroStillThreshold: 0.10; gyroMoveThreshold: 0.25; rotDamping: 0.3; scaleDamping: 0.15;">
+            smooth-follow="target: #ar-tracker; gyroStillAlpha: 0.0; minAlpha: 0.01; maxAlpha: 1.0; speedSensitivity: 60; gyroStillThreshold: 0.15; gyroMoveThreshold: 0.25; rotDamping: 0.3; scaleDamping: 0.15;">
 
             <!-- BASE: Fondo de Flores (z=0) — aparece primero -->
             <a-image src="#layer2" position="0 0 0" width="1.0" height="1.0"
